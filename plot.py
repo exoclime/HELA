@@ -72,12 +72,13 @@ def posterior_matrix(estimations, y, names, ranges, colors, soft_colors=None):
     if soft_colors is None:
         soft_colors = colors
     
-#     ticks = [[1000, 2000, 3000], [-8, -4, 0], [-8, -4, 0], [-8, -4, 0], [-6, -3]]
-    
     num_dims = estimations.shape[1]
     
-    fig, axes = plt.subplots(nrows=num_dims, ncols=num_dims, figsize=(10, 10))
-    fig.subplots_adjust(left=0.07, right=1-0.05, bottom=0.07, top=1-0.05, hspace=0.05, wspace=0.05)
+    fig, axes = plt.subplots(nrows=num_dims, ncols=num_dims,
+                             figsize=(2 * num_dims, 2 * num_dims))
+    fig.subplots_adjust(left=0.07, right=1-0.05,
+                        bottom=0.07, top=1-0.05,
+                        hspace=0.05, wspace=0.05)
     
     for ax, dims in zip(axes.flat, product(range(num_dims), range(num_dims))):
         dims = list(dims[::-1])
@@ -87,21 +88,17 @@ def posterior_matrix(estimations, y, names, ranges, colors, soft_colors=None):
         if ax.is_first_col():
             ax.yaxis.set_ticks_position('left')
             ax.yaxis.set_visible(True)
-#             ax.yaxis.set_ticks(ticks[dims[1]])
             if names is not None:
                 ax.set_ylabel(names[dims[1]], fontsize=18)
         if ax.is_last_col():
             ax.yaxis.set_ticks_position('right')
             ax.yaxis.set_visible(True)
-#             ax.yaxis.set_ticks(ticks[dims[1]])
         if ax.is_first_row():
             ax.xaxis.set_ticks_position('top')
             ax.xaxis.set_visible(True)
-#             ax.xaxis.set_ticks(ticks[dims[0]])
         if ax.is_last_row():
             ax.xaxis.set_ticks_position('bottom')
             ax.xaxis.set_visible(True)
-#             ax.xaxis.set_ticks(ticks[dims[0]])
             if names is not None:
                 ax.set_xlabel(names[dims[0]], fontsize=18)
         if ax.is_first_col() and ax.is_first_row():
@@ -120,7 +117,6 @@ def posterior_matrix(estimations, y, names, ranges, colors, soft_colors=None):
                       )
             histogram, grid_x, grid_y = _histogram(estimations[:, dims], ranges[dims])
             ax.pcolormesh(grid_x, grid_y, histogram, cmap=cmaps[dims[0]])
-#             ax.imshow(histogram, extent=ranges[dims].ravel(), cmap="Purples", origin='low')
             
             expected = np.median(estimations[:, dims], axis=0)
             ax.plot([expected[0], expected[0]], [ranges[dims[1]][0], ranges[dims[1]][1]], '-', linewidth=1, color='#222222')
@@ -137,8 +133,6 @@ def posterior_matrix(estimations, y, names, ranges, colors, soft_colors=None):
             ax.axis([ranges[dims[0]][0], ranges[dims[0]][1],
                      ranges[dims[1]][0], ranges[dims[1]][1]])
         else:
-#             locations, kd_probs, *_ = _kernel_density_joint(estimations[:, dims[:1]], ranges[dims[:1]])
-#             ax.plot(locations[0], kd_probs)
             histogram, bins = _histogram(estimations[:, dims[:1]], ranges=ranges[dims[:1]])
             ax.bar(bins[:-1], histogram, color=soft_colors[dims[0]], width=bins[1]-bins[0])
             
