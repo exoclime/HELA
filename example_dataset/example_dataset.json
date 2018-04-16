@@ -1,0 +1,10 @@
+{
+    "metadata": {
+        "names": ["$T (K)$", "H$_2$O", "HCN", "NH$_3$", "$\\kappa_0$"],
+        "ranges": [[0, 3000], [-13, 0], [-13, 0], [-13, 0], [-13, 0]],
+        "colors": ["#F14532", "#4a98c9", "#f4701b", "#4bb062", "#6363d8"],
+        "num_features": 13
+    },
+    "training_data": "training.npy",
+    "testing_data": "testing.npy"
+}
