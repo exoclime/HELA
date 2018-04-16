@@ -61,7 +61,7 @@ def compute_feature_importance(model, dataset, output_path):
 def prediction_ranges(preds):
     
     percentiles = (np.percentile(pred_i, [50, 16, 84]) for pred_i in preds.T)
-    return np.array([(a, c-a, b-a) for a, b, c in percentiles])
+    return np.array([(a, c-a, a-b) for a, b, c in percentiles])
 
 
 def main_train(training_dataset, model_path,
@@ -102,9 +102,7 @@ def main_predict(model_path, data_file, output_path, plot_posterior, **kwargs):
     pred_ranges = prediction_ranges(preds)
     
     for name_i, pred_range_i in zip(model.names, pred_ranges):
-        print("Prediction for {}: {:.3g} +{:.3g} -{:.3g}".format(name_i, *pred_range_i))
-    
-    maybe_makedirs(output_path)
+        print("Prediction for {}: {:.3g} [+{:.3g} -{:.3g}]".format(name_i, *pred_range_i))
     
     if plot_posterior:
         logger.info("Plotting and saving the posterior matrix...")
@@ -112,6 +110,7 @@ def main_predict(model_path, data_file, output_path, plot_posterior, **kwargs):
                                     names=model.names,
                                     ranges=model.ranges,
                                     colors=model.colors)
+        maybe_makedirs(output_path)
         fig.savefig(os.path.join(output_path, "posterior_matrix.pdf"),
                     bbox_inches='tight')
 
