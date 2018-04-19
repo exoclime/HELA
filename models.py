@@ -59,6 +59,8 @@ class Model:
     
     def get_params(self, deep=True):
         return {"num_trees": self.num_trees, "num_jobs": self.num_jobs,
+                "names": self.names, "ranges": self.ranges,
+                "colors": self.colors,
                 "verbose": self.verbose}
     
     def trees_predict(self, x):
