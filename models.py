@@ -45,7 +45,7 @@ class Model:
         
         if y.ndim == 1:
             y = y[:, None]
-            return self.scaler.inverse_transform(y)[:, 0]
+            # return self.scaler.inverse_transform(y)[:, 0]
         
         return self.scaler.inverse_transform(y)
     

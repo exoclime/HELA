@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 
 def train_model(dataset, num_trees, num_jobs, verbose=1):
     pipeline = Model(num_trees, num_jobs,
-                        names=dataset.names,
-                        ranges=dataset.ranges,
-                        colors=dataset.colors,
-                        verbose=verbose)
+                     names=dataset.names,
+                     ranges=dataset.ranges,
+                     colors=dataset.colors,
+                     verbose=verbose)
     pipeline.fit(dataset.training_x, dataset.training_y)
     return pipeline
 

@@ -16,7 +16,8 @@ def predicted_vs_real(y_real, y_pred, names, ranges):
     num_plot_cols = (num_plots - 1) // num_plot_rows + 1
     
     fig, axes = plt.subplots(num_plot_rows, num_plot_cols,
-                             figsize=(5*num_plot_cols, 5*num_plot_rows))
+                             figsize=(5*num_plot_cols, 5*num_plot_rows),
+                             squeeze=False)
     
     for dim, (ax, name_i, range_i) in enumerate(zip(axes.ravel(), names, ranges)):
         
@@ -27,7 +28,7 @@ def predicted_vs_real(y_real, y_pred, names, ranges):
         label = "$R^2 = {:.3f}$".format(r2)
         ax.plot(current_real, current_pred, '.', label=label)
         
-        ax.plot(range_i, range_i, '--', linewidth=3, color="C3")
+        ax.plot(range_i, range_i, '--', linewidth=3, color="C3", alpha=0.8)
         
         ax.axis("equal")
         ax.grid()
