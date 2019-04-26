@@ -117,7 +117,7 @@ The data that you wish to predict on needs to also be a ```.npy``` file, with a 
 
 ## Remarks
 
-If you have any questions or suggestions please contact either [Pablo Márquez-Neila] (mailto:pablo.marquez@artorg.unibe.ch) or [Chloe Fisher] (mailto:chloe.fisher@csh.unibe.ch).
+If you have any questions or suggestions please contact either [Pablo Márquez-Neila](mailto:pablo.marquez@artorg.unibe.ch) or [Chloe Fisher](mailto:chloe.fisher@csh.unibe.ch).
 
 Enjoy using HELA!
 
