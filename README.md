@@ -1,4 +1,4 @@
-# HELA  ![](img/HELA_logo1.png)<!-- .element height="50%" width="50%" -->
+# HELA  ![](img/HELA_logo1.png)<!-- .element height="5%" width="5%" -->
 
 A Random Forest retrieval algorithm, here used to perform atmospheric retrieval on exoplanet atmospheres.
 
