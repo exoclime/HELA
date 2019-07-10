@@ -100,17 +100,25 @@ def main_predict(model_path, data_file, output_path, plot_posterior, **kwargs):
     
     posterior_samples, posterior_weights = model.posterior(data[0])
     posterior = np.repeat(posterior_samples, posterior_weights, axis=0)
-    posterior_ranges = data_ranges(posterior)
     
+    posterior_ranges = data_ranges(posterior)
     for name_i, pred_range_i in zip(model.names, posterior_ranges):
         print("Prediction for {}: {:.3g} [+{:.3g} -{:.3g}]".format(name_i, *pred_range_i))
     
     if plot_posterior:
         logger.info("Plotting and saving the posterior matrix...")
-        fig = plot.posterior_matrix(posterior, None,
+        
+        # Compute a proper alpha channel value for points
+        # Remove 0s from posterior_weights and find the percentile 95 as
+        # a soft approximation to the maximum of the weights (to avoid outliers)
+        aux = posterior_weights[posterior_weights != 0]
+        points_alpha = 1.0 / np.percentile(aux, q=95)
+        
+        fig = plot.posterior_matrix(posterior,
                                     names=model.names,
                                     ranges=model.ranges,
-                                    colors=model.colors)
+                                    colors=model.colors,
+                                    points_alpha=points_alpha)
         os.makedirs(output_path, exist_ok=True)
         fig.savefig(os.path.join(output_path, "posterior_matrix.pdf"),
                     bbox_inches='tight')

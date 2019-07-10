@@ -9,16 +9,6 @@ __all__ = [
     "Model"
 ]
 
-def unique_indices(arr):
-    
-    result = {}
-    for i, j in enumerate(arr):
-        if j not in result:
-            result[j] = [i]
-        else:
-            result[j].append(i)
-    return result
-
 
 def _generate_sample_indices(random_state, n_samples):
     random_instance = check_random_state(random_state)
@@ -27,7 +17,7 @@ def _generate_sample_indices(random_state, n_samples):
     return sample_indices
 
 
-def tree_weights(tree, n_samples):
+def _tree_weights(tree, n_samples):
     indices = _generate_sample_indices(tree.random_state, n_samples)
     return np.bincount(indices, minlength=n_samples)
 
@@ -57,10 +47,10 @@ class Model:
         self.colors = colors
         
         # To compute the posteriors
-        self.training_leaves = None
+        self.data_leaves = None
         # self.leaf_content = None
-        self.weights = None
-        self.y = None
+        self.data_weights = None
+        self.data_y = None
     
     def _scaler_fit(self, y):
         if y.ndim == 1:
@@ -88,11 +78,14 @@ class Model:
         self.rf.fit(x, self._scaler_transform(y))
         
         # Build the structures to quickly compute the posteriors
-        self.training_leaves = self.rf.apply(x).T
-        # self.leaf_content = [unique_indices(leaves_i) for leaves_i in leaves.T]
+        self.data_leaves = self.rf.apply(x).T
         
-        self.weights = np.array([tree_weights(tree, len(y)) for tree in self.rf])
-        self.y = y
+        # This could help to make prediction faster, but makes pickling the
+        # model much slower.
+        # self.leaf_content = [_unique_indices(leaves_i) for leaves_i in leaves.T]
+        
+        self.data_weights = np.array([_tree_weights(tree, len(y)) for tree in self.rf])
+        self.data_y = y
     
     def predict(self, x):
         pred = self.rf.predict(x)
@@ -117,18 +110,13 @@ class Model:
         if x.ndim > 1:
             raise ValueError("x.ndim must be 1")
         
-        # This could be precomputed at training time, but saving
-        # the dictionaries is very slow with pickle.
-        leaf_content = (unique_indices(leaves_i)
-                        for leaves_i in self.training_leaves)
-        
         leaves_x = self.rf.apply(x[None, :])[0]
         
-        weights_x = np.zeros(len(self.y), dtype=self.weights.dtype)
+        weights_x = np.zeros(len(self.data_y), dtype=self.data_weights.dtype)
         
-        for leaf_x, leaf_content_i, weights_i in zip(leaves_x, leaf_content, self.weights):
-            indices = leaf_content_i[leaf_x]
+        for leaf_x, leaves_i, weights_i in zip(leaves_x, self.data_leaves, self.data_weights):
+            indices = np.argwhere(leaves_i == leaf_x)
             weights_x[indices] += weights_i[indices]
         
-        return self.y, weights_x
+        return self.data_y, weights_x
 

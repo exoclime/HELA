@@ -9,6 +9,13 @@ from sklearn import metrics, neighbors
 from sklearn.preprocessing import MinMaxScaler
 
 
+__all__ = [
+    "predicted_vs_real",
+    "feature_importances",
+    "posterior_matrix"
+]
+
+
 def predicted_vs_real(y_real, y_pred, names, ranges):
     
     num_plots = y_pred.shape[1]
@@ -63,7 +70,7 @@ def feature_importances(forests, names, colors):
     return fig
 
 
-def posterior_matrix(estimations, y, names, ranges, colors, soft_colors=None):
+def posterior_matrix(estimations, names, ranges, colors, soft_colors=None, points_alpha=1.0):
     
     cmaps = [LinearSegmentedColormap.from_list("MyReds", [(1, 1, 1), c], N=256)
              for c in colors]
@@ -120,17 +127,18 @@ def posterior_matrix(estimations, y, names, ranges, colors, soft_colors=None):
             ax.pcolormesh(grid_x, grid_y, histogram, cmap=cmaps[dims[0]])
             
             expected = np.median(estimations[:, dims], axis=0)
-            ax.plot([expected[0], expected[0]], [ranges[dims[1]][0], ranges[dims[1]][1]], '-', linewidth=1, color='#222222')
-            ax.plot([ranges[dims[0]][0], ranges[dims[0]][1]], [expected[1], expected[1]], '-', linewidth=1, color='#222222')
+            ax.plot([expected[0], expected[0]], [ranges[dims[1]][0], ranges[dims[1]][1]],
+                    '-', linewidth=1, color='#222222')
+            ax.plot([ranges[dims[0]][0], ranges[dims[0]][1]], [expected[1], expected[1]],
+                    '-', linewidth=1, color='#222222')
             ax.plot(expected[0], expected[1], '.', color='#222222')
             ax.axis('normal')
-            if y is not None:
-                real = y[dims]
-                ax.plot(real[0], real[1], '*', markersize=10, color='#FF0000')
             ax.axis([ranges[dims[0]][0], ranges[dims[0]][1],
                      ranges[dims[1]][0], ranges[dims[1]][1]])
         elif dims[0] > dims[1]:
-            ax.plot(estimations[:, dims[0]], estimations[:, dims[1]], '.', color=soft_colors[dims[1]])
+            ax.plot(estimations[:, dims[0]], estimations[:, dims[1]], '.',
+                    color=soft_colors[dims[1]], alpha=points_alpha,
+                    markersize=10, markeredgewidth=0)
             ax.axis([ranges[dims[0]][0], ranges[dims[0]][1],
                      ranges[dims[1]][0], ranges[dims[1]][1]])
         else:
@@ -141,9 +149,6 @@ def posterior_matrix(estimations, y, names, ranges, colors, soft_colors=None):
             expected = np.median(estimations[:, dims[0]])
             ax.plot([expected, expected], [0, 1.1 * kd_probs.max()], '-', linewidth=1, color='#222222')
             
-            if y is not None:
-                real = y[dims[0]]
-                ax.plot([real, real], [0, kd_probs.max()], 'r-')
             ax.axis([ranges[dims[0]][0], ranges[dims[0]][1],
                      0, 1.1 * kd_probs.max()])
     
