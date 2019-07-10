@@ -7,9 +7,9 @@ import numpy as np
 from sklearn import metrics, multioutput
 from sklearn.externals import joblib
 
-from dataset import Dataset, load_dataset, load_data_file
+from dataset import load_dataset, load_data_file
 from models import Model
-from utils import config_logger, maybe_makedirs
+from utils import config_logger
 import plot
 
 logger = logging.getLogger(__name__)
@@ -58,10 +58,10 @@ def compute_feature_importance(model, dataset, output_path):
                 bbox_inches='tight')
 
 
-def prediction_ranges(preds):
+def data_ranges(preds, percentiles=(50, 16, 84)):
     
-    percentiles = (np.percentile(pred_i, [50, 16, 84]) for pred_i in preds.T)
-    return np.array([(a, c-a, a-b) for a, b, c in percentiles])
+    values = (np.percentile(pred_i, percentiles) for pred_i in preds.T)
+    return np.array([(a, c-a, a-b) for a, b, c in values])
 
 
 def main_train(training_dataset, model_path,
@@ -75,7 +75,7 @@ def main_train(training_dataset, model_path,
     logger.info("Training model...")
     model = train_model(dataset, num_trees, num_jobs, not quiet)
     
-    maybe_makedirs(model_path)
+    os.makedirs(model_path, exist_ok=True)
     model_file = os.path.join(model_path, "model.pkl")
     logger.info("Saving model to '{}'...".format(model_file))
     joblib.dump(model, model_file)
@@ -98,19 +98,20 @@ def main_predict(model_path, data_file, output_path, plot_posterior, **kwargs):
     logger.info("Loading data from '{}'...".format(data_file))
     data, _ = load_data_file(data_file, model.rf.n_features_)
     
-    preds = model.trees_predict(data[0])
-    pred_ranges = prediction_ranges(preds)
+    posterior_samples, posterior_weights = model.posterior(data[0])
+    posterior = np.repeat(posterior_samples, posterior_weights, axis=0)
+    posterior_ranges = data_ranges(posterior)
     
-    for name_i, pred_range_i in zip(model.names, pred_ranges):
+    for name_i, pred_range_i in zip(model.names, posterior_ranges):
         print("Prediction for {}: {:.3g} [+{:.3g} -{:.3g}]".format(name_i, *pred_range_i))
     
     if plot_posterior:
         logger.info("Plotting and saving the posterior matrix...")
-        fig = plot.posterior_matrix(preds, None,
+        fig = plot.posterior_matrix(posterior, None,
                                     names=model.names,
                                     ranges=model.ranges,
                                     colors=model.colors)
-        maybe_makedirs(output_path)
+        os.makedirs(output_path, exist_ok=True)
         fig.savefig(os.path.join(output_path, "posterior_matrix.pdf"),
                     bbox_inches='tight')
 
