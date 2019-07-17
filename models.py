@@ -1,25 +1,33 @@
 
 import numpy as np
+from collections import namedtuple
 
 from sklearn import ensemble
 from sklearn.utils import check_random_state
 from sklearn.preprocessing import MinMaxScaler
 
 __all__ = [
-    "Model"
+    "Model",
+    "Posterior",
+    "resample_posterior"
 ]
 
+# Posteriors are represented as a collection of weighted samples
+Posterior = namedtuple("Posterior", ["samples", "weights"])
 
-def _generate_sample_indices(random_state, n_samples):
-    random_instance = check_random_state(random_state)
-    sample_indices = random_instance.randint(0, n_samples, n_samples)
+def resample_posterior(posterior, num_draws):
+    
+    p = posterior.weights / posterior.weights.sum()
+    indices = np.random.choice(len(posterior.samples), size=num_draws, p=p)
+    
+    new_weights = np.bincount(indices, minlength=len(posterior.samples))
+    mask = new_weights != 0
+    new_samples = posterior.samples[mask]
+    new_weights = posterior.weights[mask]
+    
+    return Posterior(new_samples, new_weights)
 
-    return sample_indices
 
-
-def _tree_weights(tree, n_samples):
-    indices = _generate_sample_indices(tree.random_state, n_samples)
-    return np.bincount(indices, minlength=n_samples)
 
 
 class Model:
@@ -78,7 +86,8 @@ class Model:
         self.rf.fit(x, self._scaler_transform(y))
         
         # Build the structures to quickly compute the posteriors
-        self.data_leaves = self.rf.apply(x).T
+        data_leaves = self.rf.apply(x).T
+        self.data_leaves = data_leaves.astype(_smallest_dtype(data_leaves.max()))
         
         # This could help to make prediction faster, but makes pickling the
         # model much slower.
@@ -118,5 +127,32 @@ class Model:
             indices = np.argwhere(leaves_i == leaf_x)
             weights_x[indices] += weights_i[indices]
         
-        return self.data_y, weights_x
+        # Remove samples with weight zero
+        mask = weights_x != 0
+        samples = self.data_y[mask]
+        weights = weights_x[mask]
+        
+        return Posterior(samples, weights)
 
+
+def _generate_sample_indices(random_state, n_samples):
+    random_instance = check_random_state(random_state)
+    sample_indices = random_instance.randint(0, n_samples, n_samples)
+
+    return sample_indices
+
+
+def _tree_weights(tree, n_samples):
+    indices = _generate_sample_indices(tree.random_state, n_samples)
+    return np.bincount(indices, minlength=n_samples)
+
+
+def _smallest_dtype(n):
+    
+    dtypes = [np.uint8, np.uint16, np.uint32, np.uint64]
+    
+    for dtype in dtypes:
+        if n <= np.iinfo(dtype).max:
+            return dtype
+    
+    raise ValueError("n is too large for any dtype")

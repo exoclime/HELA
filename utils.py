@@ -2,7 +2,10 @@
 import os
 import logging
 
-__all__ = ["config_logger"]
+__all__ = [
+    "config_logger"
+]
+
 
 def config_logger(log_file="/dev/null", level=logging.INFO):
     

@@ -5,11 +5,12 @@ import logging
 
 import numpy as np
 from sklearn import metrics, multioutput
-from sklearn.externals import joblib
+import joblib
 
 from dataset import load_dataset, load_data_file
 from models import Model
 from utils import config_logger
+from wpercentile import wpercentile
 import plot
 
 logger = logging.getLogger(__name__)
@@ -58,16 +59,18 @@ def compute_feature_importance(model, dataset, output_path):
                 bbox_inches='tight')
 
 
-def data_ranges(preds, percentiles=(50, 16, 84)):
+def data_ranges(posterior, percentiles=(50, 16, 84)):
     
-    values = (np.percentile(pred_i, percentiles) for pred_i in preds.T)
-    return np.array([(a, c-a, a-b) for a, b, c in values])
+    samples, weights = posterior
+    values = wpercentile(samples, weights, percentiles, axis=0)
+    ranges = np.array([values[0], values[2]-values[0], values[0]-values[1]])
+    return ranges.T
 
 
 def main_train(training_dataset, model_path,
                num_trees, num_jobs,
                feature_importance, quiet,
-               **kwargs):
+               **_):
     
     logger.info("Loading dataset '{}'...".format(training_dataset))
     dataset = load_dataset(training_dataset)
@@ -89,7 +92,7 @@ def main_train(training_dataset, model_path,
         compute_feature_importance(model, dataset, model_path)
 
 
-def main_predict(model_path, data_file, output_path, plot_posterior, **kwargs):
+def main_predict(model_path, data_file, output_path, plot_posterior, **_):
     
     model_file = os.path.join(model_path, "model.pkl")
     logger.info("Loading random forest from '{}'...".format(model_file))
@@ -98,33 +101,29 @@ def main_predict(model_path, data_file, output_path, plot_posterior, **kwargs):
     logger.info("Loading data from '{}'...".format(data_file))
     data, _ = load_data_file(data_file, model.rf.n_features_)
     
-    posterior_samples, posterior_weights = model.posterior(data[0])
-    posterior = np.repeat(posterior_samples, posterior_weights, axis=0)
+    posterior = model.posterior(data[0])
     
     posterior_ranges = data_ranges(posterior)
     for name_i, pred_range_i in zip(model.names, posterior_ranges):
         print("Prediction for {}: {:.3g} [+{:.3g} -{:.3g}]".format(name_i, *pred_range_i))
     
     if plot_posterior:
-        logger.info("Plotting and saving the posterior matrix...")
+        logger.info("Plotting the posterior matrix...")
         
-        # Compute a proper alpha channel value for points
-        # Remove 0s from posterior_weights and find the percentile 95 as
-        # a soft approximation to the maximum of the weights (to avoid outliers)
-        aux = posterior_weights[posterior_weights != 0]
-        points_alpha = 1.0 / np.percentile(aux, q=95)
-        
-        fig = plot.posterior_matrix(posterior,
-                                    names=model.names,
-                                    ranges=model.ranges,
-                                    colors=model.colors,
-                                    points_alpha=points_alpha)
+        fig = plot.posterior_matrix(
+            posterior,
+            names=model.names,
+            ranges=model.ranges,
+            colors=model.colors
+        )
         os.makedirs(output_path, exist_ok=True)
+        logger.info("Saving the figure....")
         fig.savefig(os.path.join(output_path, "posterior_matrix.pdf"),
                     bbox_inches='tight')
+        logger.info("Done.")
 
 
-def show_usage(parser, **kwargs):
+def show_usage(parser, **_):
     parser.print_help()
 
 
