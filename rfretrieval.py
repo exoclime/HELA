@@ -34,7 +34,7 @@ def test_model(model, dataset, output_path):
     logger.info("Testing model...")
     pred = model.predict(dataset.testing_x)
     r2scores = {name_i: metrics.r2_score(real_i, pred_i)
-                    for name_i, real_i, pred_i in zip(dataset.names, dataset.testing_y.T, pred.T)}
+                for name_i, real_i, pred_i in zip(dataset.names, dataset.testing_y.T, pred.T)}
     print("Testing scores:")
     for name, values in r2scores.items():
         print("\tR^2 score for {}: {:.3f}".format(name, values))
@@ -89,6 +89,7 @@ def main_train(training_dataset, model_path,
     test_model(model, dataset, model_path)
     
     if feature_importance:
+        model.enable_posterior = False
         compute_feature_importance(model, dataset, model_path)
 
 

@@ -33,7 +33,7 @@ def resample_posterior(posterior, num_draws):
 class Model:
     
     def __init__(self, num_trees, num_jobs,
-                 names, ranges, colors,
+                 names, ranges, colors, enable_posterior=True,
                  verbose=1):
         scaler = MinMaxScaler(feature_range=(0, 100))
         rf = ensemble.RandomForestRegressor(n_estimators=num_trees,
@@ -55,8 +55,8 @@ class Model:
         self.colors = colors
         
         # To compute the posteriors
+        self.enable_posterior = enable_posterior
         self.data_leaves = None
-        # self.leaf_content = None
         self.data_weights = None
         self.data_y = None
     
@@ -86,24 +86,20 @@ class Model:
         self.rf.fit(x, self._scaler_transform(y))
         
         # Build the structures to quickly compute the posteriors
-        data_leaves = self.rf.apply(x).T
-        self.data_leaves = data_leaves.astype(_smallest_dtype(data_leaves.max()))
-        
-        # This could help to make prediction faster, but makes pickling the
-        # model much slower.
-        # self.leaf_content = [_unique_indices(leaves_i) for leaves_i in leaves.T]
-        
-        self.data_weights = np.array([_tree_weights(tree, len(y)) for tree in self.rf])
-        self.data_y = y
+        if self.enable_posterior:
+            data_leaves = self.rf.apply(x).T
+            self.data_leaves = data_leaves.astype(_smallest_dtype(data_leaves.max()))
+            self.data_weights = np.array([_tree_weights(tree, len(y)) for tree in self.rf])
+            self.data_y = y
     
     def predict(self, x):
         pred = self.rf.predict(x)
         return self._scaler_inverse_transform(pred)
     
-    def get_params(self, _=True):
+    def get_params(self, deep=True):
         return {"num_trees": self.num_trees, "num_jobs": self.num_jobs,
                 "names": self.names, "ranges": self.ranges,
-                "colors": self.colors,
+                "colors": self.colors, "enable_posterior": self.enable_posterior,
                 "verbose": self.verbose}
     
     def trees_predict(self, x):
@@ -115,6 +111,9 @@ class Model:
         return self._scaler_inverse_transform(preds)
     
     def posterior(self, x):
+        
+        if not self.enable_posterior:
+            raise ValueError("Cannot compute posteriors with this model. Set `enable_posterior` to True to enable posterior computation.")
         
         if x.ndim > 1:
             raise ValueError("x.ndim must be 1")
