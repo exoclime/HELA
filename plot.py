@@ -15,7 +15,7 @@ from wpercentile import wmedian
 try:
     from tqdm import tqdm
 except ImportError:
-    def tqdm(x, *_, **__): x
+    def tqdm(x, *_, **__): return x
 
 __all__ = [
     "predicted_vs_real",
@@ -41,9 +41,13 @@ def predicted_vs_real(y_real, y_pred, names, ranges):
         current_real = y_real[:, dim]
         current_pred = y_pred[:, dim]
         
+        # TODO: this is a quick fix. Check at some point in the future.
+        aux, *_ = np.histogram2d(current_real, current_pred, bins=60)
+        alpha = 1 / np.percentile(aux[aux > 0], 60)
+        
         r2 = metrics.r2_score(current_real, current_pred)
         label = "$R^2 = {:.3f}$".format(r2)
-        ax.plot(current_real, current_pred, '.', label=label)
+        ax.plot(current_real, current_pred, '.', label=label, alpha=alpha)
         
         ax.plot(range_i, range_i, '--', linewidth=3, color="C3", alpha=0.8)
         
@@ -197,7 +201,7 @@ def _plot_histogram2d(ax, posterior, color, cmap, dims, ranges):
     ax.plot([ranges[0][0], ranges[0][1]], [expected[1], expected[1]],
             '-', linewidth=1, color='#222222')
     ax.plot(expected[0], expected[1], '.', color='#222222')
-    ax.axis('normal')
+    ax.axis('auto')
     ax.axis([ranges[0][0], ranges[0][1],
              ranges[1][0], ranges[1][1]])
 

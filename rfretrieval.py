@@ -33,6 +33,7 @@ def test_model(model, dataset, output_path):
     
     logger.info("Testing model...")
     pred = model.predict(dataset.testing_x)
+    # pred = model.predict_median(dataset.testing_x)
     r2scores = {name_i: metrics.r2_score(real_i, pred_i)
                 for name_i, real_i, pred_i in zip(dataset.names, dataset.testing_y.T, pred.T)}
     print("Testing scores:")
