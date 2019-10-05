@@ -26,7 +26,7 @@ __all__ = [
 POSTERIOR_MAX_SIZE = 10000
 
 
-def predicted_vs_real(y_real, y_pred, names, ranges):
+def predicted_vs_real(y_real, y_pred, names, ranges, alpha='auto'):
     
     num_plots = y_pred.shape[1]
     num_plot_rows = int(np.sqrt(num_plots))
@@ -41,13 +41,18 @@ def predicted_vs_real(y_real, y_pred, names, ranges):
         current_real = y_real[:, dim]
         current_pred = y_pred[:, dim]
         
-        # TODO: this is a quick fix. Check at some point in the future.
-        aux, *_ = np.histogram2d(current_real, current_pred, bins=60)
-        alpha = 1 / np.percentile(aux[aux > 0], 60)
+        if alpha == 'auto':
+            # TODO: this is a quick fix. Check at some point in the future.
+            aux, *_ = np.histogram2d(current_real, current_pred, bins=60)
+            alpha_ = 1 / np.percentile(aux[aux > 0], 60)
+        elif alpha == 'none':
+            alpha_ = None
+        else:
+            alpha_ = alpha
         
         r2 = metrics.r2_score(current_real, current_pred)
         label = "$R^2 = {:.3f}$".format(r2)
-        ax.plot(current_real, current_pred, '.', label=label, alpha=alpha)
+        ax.plot(current_real, current_pred, '.', label=label, alpha=alpha_)
         
         ax.plot(range_i, range_i, '--', linewidth=3, color="C3", alpha=0.8)
         
