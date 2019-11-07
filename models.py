@@ -1,16 +1,25 @@
 
-import numpy as np
+import logging
 from collections import namedtuple
+
+import numpy as np
 
 from sklearn import ensemble
 from sklearn.utils import check_random_state
 from sklearn.preprocessing import MinMaxScaler
+
+try:
+    from tqdm import tqdm
+except ImportError:
+    def tqdm(x, *_, **__): return x
 
 __all__ = [
     "Model",
     "Posterior",
     "resample_posterior"
 ]
+
+logger = logging.getLogger(__name__)
 
 # Posteriors are represented as a collection of weighted samples
 Posterior = namedtuple("Posterior", ["samples", "weights"])
@@ -26,8 +35,6 @@ def resample_posterior(posterior, num_draws):
     new_weights = posterior.weights[mask]
     
     return Posterior(new_samples, new_weights)
-
-
 
 
 class Model:
@@ -88,7 +95,7 @@ class Model:
         # Build the structures to quickly compute the posteriors
         if self.enable_posterior:
             data_leaves = self.rf.apply(x).T
-            self.data_leaves = data_leaves.astype(_smallest_dtype(data_leaves.max()))
+            self.data_leaves = _as_smallest_udtype(data_leaves)
             self.data_weights = np.array([_tree_weights(tree, len(y)) for tree in self.rf])
             self.data_y = y
     
@@ -96,42 +103,120 @@ class Model:
         pred = self.rf.predict(x)
         return self._scaler_inverse_transform(pred)
     
+    def predict_median(self, x):
+        return self.predict_percentile(x, 50)
+    
+    def predict_percentile(self, x, percentile):
+        
+        if not self.enable_posterior:
+            raise ValueError("Cannot compute posteriors with this model. "
+                             "Set `enable_posterior` to True to enable posterior computation.")
+        
+        # Find the leaves for the query points
+        leaves_x = self.rf.apply(x)
+        
+        if len(x) > self.num_trees:
+            # If there are many queries, it is faster to find points using a cache
+            return _posterior_percentile_cache(
+                self.data_leaves, self.data_weights,
+                self.data_y, leaves_x, percentile
+            )
+        else:
+            # For few queries, it is faster if we just compute the posterior for each element
+            return _posterior_percentile_nocache(
+                self.data_leaves, self.data_weights,
+                self.data_y, leaves_x, percentile
+            )
+    
     def get_params(self, deep=True):
         return {"num_trees": self.num_trees, "num_jobs": self.num_jobs,
                 "names": self.names, "ranges": self.ranges,
                 "colors": self.colors, "enable_posterior": self.enable_posterior,
                 "verbose": self.verbose}
     
-    def trees_predict(self, x):
-        
-        if x.ndim > 1:
-            raise ValueError("x.ndim must be 1")
-        
-        preds = np.array([tree.predict(x[None, :])[0] for tree in self.rf])
-        return self._scaler_inverse_transform(preds)
-    
     def posterior(self, x):
         
         if not self.enable_posterior:
-            raise ValueError("Cannot compute posteriors with this model. Set `enable_posterior` to True to enable posterior computation.")
+            raise ValueError("Cannot compute posteriors with this model. "
+                             "Set `enable_posterior` to True to enable posterior computation.")
         
         if x.ndim > 1:
             raise ValueError("x.ndim must be 1")
         
         leaves_x = self.rf.apply(x[None, :])[0]
         
-        weights_x = np.zeros(len(self.data_y), dtype=self.data_weights.dtype)
+        return _posterior(
+            self.data_leaves, self.data_weights,
+            self.data_y, leaves_x
+        )
+
+
+def _posterior(data_leaves, data_weights, data_y, query_leaves):
+    
+    weights_x = (query_leaves[:, None] == data_leaves) * data_weights
+    weights_x = _as_smallest_udtype(weights_x.sum(0))
+    
+    # Remove samples with weight zero
+    mask = weights_x != 0
+    samples = data_y[mask]
+    weights = weights_x[mask]
+    
+    return Posterior(samples, weights)
+
+
+def _posterior_percentile_nocache(data_leaves, data_weights, data_y, query_leaves, percentile):
+    
+    values = []
+    
+    logger.info("Computing percentiles...")
+    for leaves_x_i in tqdm(query_leaves):
+        posterior = _posterior(
+            data_leaves, data_weights,
+            data_y, leaves_x_i
+        )
+        samples = np.repeat(posterior.samples, posterior.weights, axis=0)
+        value = np.percentile(samples, percentile, axis=0)
+        values.append(value)
+    
+    return np.array(values)
+
+
+def _posterior_percentile_cache(data_leaves, data_weights, data_y, query_leaves, percentile):
+    
+    # Build a dictionary for fast access of the contents of the leaves.
+    logger.info("Building cache...")
+    cache = [
+        _build_leaves_cache(leaves_i, weights_i)
+        for leaves_i, weights_i in zip(data_leaves, data_weights)
+    ]
+    
+    values = []
+    # Check the contents of the leaves in leaves_x
+    logger.info("Computing percentiles...")
+    for leaves_x_i in tqdm(query_leaves):
+        data_elements = []
+        for tree, leaves_x_i_j in enumerate(leaves_x_i):
+            aux = cache[tree][leaves_x_i_j]
+            data_elements.extend(aux)
+        value = np.percentile(data_y[data_elements], percentile, axis=0)
+        values.append(value)
+    
+    return np.array(values)
+
+
+def _build_leaves_cache(leaves, weights):
+    
+    result = {}
+    for index, (leaf, weight) in enumerate(zip(leaves, weights)):
+        if weight == 0:
+            continue
         
-        for leaf_x, leaves_i, weights_i in zip(leaves_x, self.data_leaves, self.data_weights):
-            indices = np.argwhere(leaves_i == leaf_x)
-            weights_x[indices] += weights_i[indices]
-        
-        # Remove samples with weight zero
-        mask = weights_x != 0
-        samples = self.data_y[mask]
-        weights = weights_x[mask]
-        
-        return Posterior(samples, weights)
+        if leaf not in result:
+            result[leaf] = [index] * weight
+        else:
+            result[leaf].extend([index] * weight)
+    
+    return result
 
 
 def _generate_sample_indices(random_state, n_samples):
@@ -143,15 +228,20 @@ def _generate_sample_indices(random_state, n_samples):
 
 def _tree_weights(tree, n_samples):
     indices = _generate_sample_indices(tree.random_state, n_samples)
-    return np.bincount(indices, minlength=n_samples)
+    res = np.bincount(indices, minlength=n_samples)
+    return _as_smallest_udtype(res)
 
 
-def _smallest_dtype(n):
+def _as_smallest_udtype(arr):
+    return arr.astype(_smallest_udtype(arr.max()))
+
+
+def _smallest_udtype(value):
     
     dtypes = [np.uint8, np.uint16, np.uint32, np.uint64]
     
     for dtype in dtypes:
-        if n <= np.iinfo(dtype).max:
+        if value <= np.iinfo(dtype).max:
             return dtype
     
-    raise ValueError("n is too large for any dtype")
+    raise ValueError("value is too large for any dtype")
