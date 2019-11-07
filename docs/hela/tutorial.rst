@@ -41,6 +41,22 @@ train the random forest with 1000 trees and on a single processor:
     r2scores = rf.train(num_trees=1000, num_jobs=1)
     plt.show()
 
+.. plot::
+
+    from hela import generate_example_data
+    # Generate an example dataset directory
+    example_dir, training_dataset, samples_path = generate_example_data()
+
+    from hela import RandomForest
+    import matplotlib.pyplot as plt
+
+    # Initialize a random forest object:
+    rf = RandomForest(training_dataset, example_dir, samples_path)
+
+    # Train the random forest:
+    r2scores = rf.train(num_trees=1000, num_jobs=1)
+    plt.show()
+
 The `~hela.RandomForest.train` method returns a dictionary called `r2scores`
 which contains the :math:`R^2` scores of the slope and intercept.
 
@@ -48,6 +64,26 @@ Finally, let's estimate the posterior distributions for the slope and intercept
 using the trained random forest on the sample data in ``samples_path``:
 
 .. code-block:: python
+
+    # Predict posterior distirbutions from random forest
+    posterior_slopes, posterior_intercepts = rf.predict(plot_posterior=True)
+    plt.show()
+
+.. plot::
+
+    from hela import generate_example_data
+    # Generate an example dataset directory
+    example_dir, training_dataset, samples_path = generate_example_data()
+
+    from hela import RandomForest
+    import matplotlib.pyplot as plt
+
+    # Initialize a random forest object:
+    rf = RandomForest(training_dataset, example_dir, samples_path)
+
+    # Train the random forest:
+    r2scores = rf.train(num_trees=1000, num_jobs=1)
+    plt.close()
 
     # Predict posterior distirbutions from random forest
     posterior_slopes, posterior_intercepts = rf.predict(plot_posterior=True)

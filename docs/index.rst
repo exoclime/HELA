@@ -8,4 +8,4 @@ Random Forest retrieval for exoplanet atmospheres.
 
   hela/installation.rst
   hela/tutorial.rst
-
+  hela/api.rst
