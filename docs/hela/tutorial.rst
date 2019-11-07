@@ -1,6 +1,9 @@
 Tutorial
 ========
 
+Fitting a line
+--------------
+
 First, we must generate some example data, which we can do using a built-in
 function called `~hela.generate_example_data`, which returns the path to the
 example file directory, the training dataset path, and the path to the samples
@@ -87,5 +90,6 @@ using the trained random forest on the sample data in ``samples_path``:
 
     # Predict posterior distirbutions from random forest
     posterior_slopes, posterior_intercepts = rf.predict(plot_posterior=True)
+    plt.tight_layout()
     plt.show()
 
