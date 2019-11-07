@@ -2,11 +2,28 @@
 from itertools import product
 
 import numpy as np
+from matplotlib.colors import to_rgba_array
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
 from sklearn import metrics, neighbors
 from sklearn.preprocessing import MinMaxScaler
+
+from models import resample_posterior
+from wpercentile import wmedian
+
+try:
+    from tqdm import tqdm
+except ImportError:
+    def tqdm(x, *_, **__): x
+
+__all__ = [
+    "predicted_vs_real",
+    "feature_importances",
+    "posterior_matrix"
+]
+
+POSTERIOR_MAX_SIZE = 10000
 
 
 def predicted_vs_real(y_real, y_pred, names, ranges):
@@ -63,7 +80,9 @@ def feature_importances(forests, names, colors):
     return fig
 
 
-def posterior_matrix(estimations, y, names, ranges, colors, soft_colors=None):
+def posterior_matrix(posterior, names, ranges, colors, soft_colors=None):
+    
+    samples, weights = posterior
     
     cmaps = [LinearSegmentedColormap.from_list("MyReds", [(1, 1, 1), c], N=256)
              for c in colors]
@@ -73,7 +92,7 @@ def posterior_matrix(estimations, y, names, ranges, colors, soft_colors=None):
     if soft_colors is None:
         soft_colors = colors
     
-    num_dims = estimations.shape[1]
+    num_dims = samples.shape[1]
     
     fig, axes = plt.subplots(nrows=num_dims, ncols=num_dims,
                              figsize=(2 * num_dims, 2 * num_dims))
@@ -81,8 +100,11 @@ def posterior_matrix(estimations, y, names, ranges, colors, soft_colors=None):
                         bottom=0.07, top=1-0.05,
                         hspace=0.05, wspace=0.05)
     
-    for ax, dims in zip(axes.flat, product(range(num_dims), range(num_dims))):
-        dims = list(dims[::-1])
+    iterable = zip(axes.flat, product(range(num_dims), range(num_dims)))
+    for ax, dims in tqdm(iterable, total=num_dims**2):
+        # Flip dims.
+        dims = [dims[1], dims[0]]
+        
         ax.xaxis.set_visible(False)
         ax.yaxis.set_visible(False)
         ax.title.set_visible(False)
@@ -109,46 +131,102 @@ def posterior_matrix(estimations, y, names, ranges, colors, soft_colors=None):
             ax.yaxis.set_visible(False)
         
         if dims[0] < dims[1]:
-            locations, kd_probs, *_ = _kernel_density_joint(estimations[:, dims], ranges[dims])
-            ax.contour(locations[0], locations[1],
-                       kd_probs,
-                       colors=colors[dims[0]],
-                       linewidths=0.5
-                       # 'copper', # 'hot', 'magma' ('copper' with white background)
-                      )
-            histogram, grid_x, grid_y = _histogram(estimations[:, dims], ranges[dims])
-            ax.pcolormesh(grid_x, grid_y, histogram, cmap=cmaps[dims[0]])
-            
-            expected = np.median(estimations[:, dims], axis=0)
-            ax.plot([expected[0], expected[0]], [ranges[dims[1]][0], ranges[dims[1]][1]], '-', linewidth=1, color='#222222')
-            ax.plot([ranges[dims[0]][0], ranges[dims[0]][1]], [expected[1], expected[1]], '-', linewidth=1, color='#222222')
-            ax.plot(expected[0], expected[1], '.', color='#222222')
-            ax.axis('normal')
-            if y is not None:
-                real = y[dims]
-                ax.plot(real[0], real[1], '*', markersize=10, color='#FF0000')
-            ax.axis([ranges[dims[0]][0], ranges[dims[0]][1],
-                     ranges[dims[1]][0], ranges[dims[1]][1]])
+            _plot_histogram2d(
+                ax, posterior,
+                color=colors[dims[0]],
+                cmap=cmaps[dims[0]],
+                dims=dims,
+                ranges=ranges[dims]
+            )
         elif dims[0] > dims[1]:
-            ax.plot(estimations[:, dims[0]], estimations[:, dims[1]], '.', color=soft_colors[dims[1]])
-            ax.axis([ranges[dims[0]][0], ranges[dims[0]][1],
-                     ranges[dims[1]][0], ranges[dims[1]][1]])
+            _plot_samples(
+                ax, posterior,
+                color=soft_colors[dims[1]],
+                dims=dims,
+                ranges=ranges[dims]
+            )
         else:
-            histogram, bins = _histogram(estimations[:, dims[:1]], ranges=ranges[dims[:1]])
+            histogram, bins = _histogram1d(
+                samples[:, dims[:1]], weights,
+                ranges=ranges[dims[:1]]
+            )
             ax.bar(bins[:-1], histogram, color=soft_colors[dims[0]], width=bins[1]-bins[0])
             
             kd_probs = histogram
-            expected = np.median(estimations[:, dims[0]])
+            expected = wmedian(samples[:, dims[0]], weights)
             ax.plot([expected, expected], [0, 1.1 * kd_probs.max()], '-', linewidth=1, color='#222222')
             
-            if y is not None:
-                real = y[dims[0]]
-                ax.plot([real, real], [0, kd_probs.max()], 'r-')
             ax.axis([ranges[dims[0]][0], ranges[dims[0]][1],
                      0, 1.1 * kd_probs.max()])
     
     # fig.tight_layout(pad=0)
     return fig
+
+
+def _plot_histogram2d(ax, posterior, color, cmap, dims, ranges):
+    
+    samples, weights = posterior
+    # For efficiency, do not compute the kernel density
+    # over all the samples of the posterior. Subsample first.
+    if len(samples) > POSTERIOR_MAX_SIZE:
+        samples, weights = resample_posterior(posterior, POSTERIOR_MAX_SIZE)
+    
+    locations, kd_probs, *_ = _kernel_density_joint(
+        samples[:, dims],
+        weights,
+        ranges
+    )
+    ax.contour(
+        locations[0], locations[1],
+        kd_probs,
+        colors=color,
+        linewidths=0.5
+    )
+    
+    # For the rest of the plot we use the complete posterior
+    samples, weights = posterior
+    histogram, grid_x, grid_y = _histogram2d(
+        samples[:, dims], weights,
+        ranges
+    )
+    ax.pcolormesh(grid_x, grid_y, histogram, cmap=cmap)
+    
+    expected = wmedian(samples[:, dims], weights, axis=0)
+    ax.plot([expected[0], expected[0]], [ranges[1][0], ranges[1][1]],
+            '-', linewidth=1, color='#222222')
+    ax.plot([ranges[0][0], ranges[0][1]], [expected[1], expected[1]],
+            '-', linewidth=1, color='#222222')
+    ax.plot(expected[0], expected[1], '.', color='#222222')
+    ax.axis('normal')
+    ax.axis([ranges[0][0], ranges[0][1],
+             ranges[1][0], ranges[1][1]])
+
+
+def _plot_samples(ax, posterior, color, dims, ranges):
+    
+    # For efficiency, do not plot all the samples of the posterior. Subsample first.
+    if len(posterior.samples) > POSTERIOR_MAX_SIZE:
+        posterior = resample_posterior(posterior, POSTERIOR_MAX_SIZE)
+    
+    samples, weights = posterior
+    
+    points_alpha = _weights_to_alpha(weights)
+    
+    current_colors = to_rgba_array(color)
+    current_colors = np.tile(current_colors, (len(samples), 1))
+    current_colors[:, 3] = points_alpha
+    
+    ax.scatter(
+        x=samples[:, dims[0]],
+        y=samples[:, dims[1]],
+        s=100,
+        c=current_colors,
+        marker='.',
+        linewidth=0
+    )
+    
+    ax.axis([ranges[0][0], ranges[0][1],
+             ranges[1][0], ranges[1][1]])
 
 
 def _min_max_scaler(ranges, feature_range=(0, 100)):
@@ -163,7 +241,7 @@ def _min_max_scaler(ranges, feature_range=(0, 100)):
     return res
 
 
-def _kernel_density_joint(estimations, ranges, bandwidth=1/25):
+def _kernel_density_joint(samples, weights, ranges, bandwidth=1/25):
     
     ndims = len(ranges)
     
@@ -172,26 +250,51 @@ def _kernel_density_joint(estimations, ranges, bandwidth=1/25):
     bandwidth = bandwidth * 100
     # step = 1.0
     
-    kd = neighbors.KernelDensity(bandwidth=bandwidth).fit(scaler.transform(estimations))
-    locations1d = np.arange(0, 100, 1)
-    locations = np.reshape(np.meshgrid(*[locations1d] * ndims), (ndims, -1)).T
+    kd = neighbors.KernelDensity(bandwidth=bandwidth)
+    kd.fit(scaler.transform(samples), sample_weight=weights)
+    
+    grid_shape = [100] * ndims
+    grid = np.indices(grid_shape)
+    locations = np.reshape(grid, (ndims, -1)).T
     kd_probs = np.exp(kd.score_samples(locations))
     
-    shape = (ndims,) + (len(locations1d),) * ndims
+    shape = (ndims, *grid_shape)
     locations = scaler.inverse_transform(locations)
     locations = np.reshape(locations.T, shape)
-    kd_probs = np.reshape(kd_probs, shape[1:])
+    kd_probs = np.reshape(kd_probs, grid_shape)
     return locations, kd_probs, kd
 
 
-def _histogram(estimations, ranges, bins=20):
+def _histogram1d(samples, weights, ranges, bins=20):
     
-    if len(ranges) == 1:
-        histogram, edges = np.histogram(estimations[:, 0], bins=bins, range=ranges[0])
-        return histogram, edges
+    assert(len(ranges) == 1)
     
-    if len(ranges) == 2:
-        histogram, xedges, yedges = np.histogram2d(estimations[:, 0], estimations[:, 1], bins=bins, range=ranges)
-        grid_x, grid_y = np.meshgrid(xedges, yedges)
-        return histogram.T, grid_x, grid_y, 
+    histogram, edges = np.histogram(
+        samples[:, 0],
+        bins=bins,
+        range=ranges[0],
+        weights=weights
+    )
+    return histogram, edges
 
+
+def _histogram2d(samples, weights, ranges, bins=20):
+    
+    assert(len(ranges) == 2)
+    
+    histogram, xedges, yedges = np.histogram2d(
+        samples[:, 0],
+        samples[:, 1],
+        bins=bins,
+        range=ranges,
+        weights=weights
+    )
+    grid_x, grid_y = np.meshgrid(xedges, yedges)
+    return histogram.T, grid_x, grid_y, 
+
+
+def _weights_to_alpha(weights):
+    
+    # Maximum weight (removing potential outliers)
+    max_weight = np.percentile(weights, 98)
+    return np.clip(weights / max_weight, 0, 1)
