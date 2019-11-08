@@ -64,12 +64,15 @@ The `~hela.RandomForest.train` method returns a dictionary called `r2scores`
 which contains the :math:`R^2` scores of the slope and intercept.
 
 Finally, let's estimate the posterior distributions for the slope and intercept
-using the trained random forest on the sample data in ``samples_path``:
+using the trained random forest on the sample data in ``samples_path``, where
+the true values of the slope and intercept are :math:`m=0.3` and :math:`b=0.5`
+using the `~hela.RandomForest.predict` method:
 
 .. code-block:: python
 
     # Predict posterior distirbutions from random forest
-    posterior_slopes, posterior_intercepts = rf.predict(plot_posterior=True)
+    samples, weights = rf.predict(plot_posterior=True)
+    posterior_slopes, posterior_intercepts = samples.T
     plt.show()
 
 .. plot::
@@ -89,6 +92,8 @@ using the trained random forest on the sample data in ``samples_path``:
     plt.close()
 
     # Predict posterior distirbutions from random forest
+    samples, weights = rf.predict(plot_posterior=True)
+    posterior_slopes, posterior_intercepts = samples.T
     plt.tight_layout()
     plt.show()
 

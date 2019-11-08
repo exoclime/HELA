@@ -66,9 +66,12 @@ class RandomForest(object):
         """
         Parameters
         ----------
-        training_dataset
-        model_path
-        data_file
+        training_dataset : str
+            Path to the dataset metadata JSON file
+        model_path : str
+            Path to the output directory to create and populate
+        data_file : str
+            Path to the numpy pickle of the samples to predict on
         """
         self.training_dataset = training_dataset
         self.model_path = model_path
@@ -91,6 +94,7 @@ class RandomForest(object):
         Returns
         -------
         r2scores : dict
+            :math:`R^2` values for each parameter after training
         """
         # Loading dataset
         self.dataset = load_dataset(self.training_dataset)
@@ -133,8 +137,8 @@ class RandomForest(object):
         Returns
         -------
         preds : `~numpy.ndarray`
-            N x M values where N is number of parameters, M is number of
-            samples/trees (check out attributes of model for metadata)
+            ``N x M`` values where ``N`` is number of parameters, ``M`` is
+            number of samples/trees (check out attributes of model for metadata)
         """
         model_file = os.path.join(self.model_path, "model.pkl")
         # Loading random forest from '{}'...".format(model_file)
@@ -181,7 +185,16 @@ def data_ranges(posterior, percentiles=(50, 16, 84)):
 
 def generate_example_data():
     """
-    Generate an example dataset in the new directory ``linear_dataset``
+    Generate an example dataset in the new directory ``linear_dataset``.
+
+    Returns
+    -------
+    example_dir : str
+        Path to the directory of the example data
+    training_dataset : str
+        Path to the dataset metadata JSON file
+    samples_path : str
+        Path to the numpy pickle of the samples to predict on
     """
     example_dir = 'linear_dataset'
     training_dataset = os.path.join(example_dir, 'example_dataset.json')
