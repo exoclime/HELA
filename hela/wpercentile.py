@@ -30,6 +30,17 @@ def _wpercentile1d(data, weights, percentiles):
 def wpercentile(data, weights, percentiles, axis=None):
     """
     Compute percentiles of a weighted sample.
+
+    Parameters
+    ----------
+    data : `~numpy.ndarray`
+    weights : `~numpy.ndarray`
+    percentiles : list
+    axis : int
+
+    Returns
+    -------
+    ar : `~numpy.ndarray`
     """
     if axis is None:
         data = np.ravel(data)
@@ -57,5 +68,18 @@ def wpercentile(data, weights, percentiles, axis=None):
 
 
 def wmedian(data, weights, axis=None):
-    """Compute the weighted median."""
+    """
+    Compute the weighted median.
+
+    Parameters
+    ----------
+    data : `~numpy.ndarray`
+    weights : `~numpy.ndarray`
+    axis : int
+
+    Returns
+    -------
+    ar : `~numpy.ndarray`
+    """
+
     return wpercentile(data, weights, 50, axis)

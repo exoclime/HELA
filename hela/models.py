@@ -20,13 +20,13 @@ class Model(object):
         """
         Parameters
         ----------
-        num_trees
-        num_jobs
-        names
-        ranges
-        colors
-        verbose
-        enable_posterior
+        num_trees : int
+        num_jobs : int
+        names : list
+        ranges : list
+        colors : list
+        verbose : bool or int
+        enable_posterior : bool
         """
         scaler = MinMaxScaler(feature_range=(0, 100))
         rf = ensemble.RandomForestRegressor(n_estimators=num_trees,
@@ -75,6 +75,16 @@ class Model(object):
         return self.scaler.inverse_transform(y)
 
     def fit(self, x, y):
+        """
+        Fit the model.
+
+        Follows scikit-learn convention.
+
+        Parameters
+        ----------
+        x : `~numpy.ndarray`
+        y : `~numpy.ndarray`
+        """
         self._scaler_fit(y)
         self.rf.fit(x, self._scaler_transform(y))
 
@@ -86,6 +96,15 @@ class Model(object):
             self.data_y = y
 
     def predict(self, x):
+        """
+        Predict on values of ``x``
+
+        Follows scikit-learn convention.
+
+        Parameters
+        ----------
+        x : `~numpy.ndarray`
+        """
         pred = self.rf.predict(x)
         return self._scaler_inverse_transform(pred)
 
