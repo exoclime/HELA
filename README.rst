@@ -8,7 +8,7 @@
     :alt: arXiv paper
 
 A Random Forest retrieval algorithm, here used to perform atmospheric retrieval 
-    on exoplanet atmospheres.
+on exoplanet atmospheres.
 
 Legacy API
 ++++++++++

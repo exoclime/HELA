@@ -1,4 +1,4 @@
-# HELA       <img src="img/HELA_logo1.png" alt="drawing" align="right" width="200"/>
+# HELA       <img src="../img/HELA_logo1.png" alt="drawing" align="right" width="200"/>
 
 A Random Forest retrieval algorithm, here used to perform atmospheric retrieval on exoplanet atmospheres.
 
