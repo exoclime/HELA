@@ -6,12 +6,12 @@ from sklearn.utils import check_random_state
 
 from tqdm import tqdm
 
-__all__ = ['Model', 'Posterior', 'resample_posterior']
+__all__ = ['RandomForestWrapper', 'Posterior', 'resample_posterior']
 
 
-class Model(object):
+class RandomForestWrapper(object):
     """
-    Class for models.
+    Wrapper class for the scikit-learn RandomForestRegressor.
     """
 
     def __init__(self, num_trees, num_jobs, names, ranges, colors,

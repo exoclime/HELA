@@ -6,20 +6,20 @@ from sklearn import metrics, multioutput
 import joblib
 
 from .dataset import load_dataset, load_data_file
-from .models import Model
+from .wrapper import RandomForestWrapper
 from .plot import (plot_predicted_vs_real, plot_feature_importances,
                    plot_posterior_matrix)
 from .wpercentile import wpercentile
 
-__all__ = ['RandomForest', 'generate_example_data']
+__all__ = ['Model', 'generate_example_data']
 
 
 def train_model(dataset, num_trees, num_jobs, verbose=1):
-    pipeline = Model(num_trees, num_jobs,
-                     names=dataset.names,
-                     ranges=dataset.ranges,
-                     colors=dataset.colors,
-                     verbose=verbose)
+    pipeline = RandomForestWrapper(num_trees, num_jobs,
+                                   names=dataset.names,
+                                   ranges=dataset.ranges,
+                                   colors=dataset.colors,
+                                   verbose=verbose)
     pipeline.fit(dataset.training_x, dataset.training_y)
     return pipeline
 
@@ -51,9 +51,9 @@ def compute_feature_importance(model, dataset):
     return np.array([forest_i.feature_importances_ for forest_i in forests])
 
 
-class RandomForest(object):
+class Model(object):
     """
-    A class for a random forest.
+    A class for a trainable random forest model.
     """
 
     def __init__(self, training_dataset, model_path, data_file):

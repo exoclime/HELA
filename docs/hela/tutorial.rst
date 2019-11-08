@@ -39,16 +39,16 @@ We also generated a bunch of samples with a known slope and intercept, called
 the slope and intercept.
 
 Once we have these three data structures written and their paths saved, we can
-run ``hela`` on the data. First, we'll initialize a `~hela.RandomForest` object
+run ``hela`` on the data. First, we'll initialize a `~hela.Model` object
 with the paths to the three files/directories that it needs to know about:
 
 .. code-block:: python
 
-    from hela import RandomForest
+    from hela import Model
     import matplotlib.pyplot as plt
 
     # Initialize a random forest object:
-    rf = RandomForest(training_dataset, example_dir, samples_path)
+    m = Model(training_dataset, example_dir, samples_path)
 
 We now have a random forest object ``rf`` which is ready for training. We can
 train the random forest with 1000 trees and on a single processor:
@@ -56,7 +56,7 @@ train the random forest with 1000 trees and on a single processor:
 .. code-block:: python
 
     # Train the random forest:
-    r2scores = rf.train(num_trees=1000, num_jobs=1)
+    r2scores = m.train(num_trees=1000, num_jobs=1)
     plt.show()
 
 .. plot::
@@ -65,29 +65,29 @@ train the random forest with 1000 trees and on a single processor:
     # Generate an example dataset directory
     example_dir, training_dataset, samples_path = generate_example_data()
 
-    from hela import RandomForest
+    from hela import Model
     import matplotlib.pyplot as plt
 
     # Initialize a random forest object:
-    rf = RandomForest(training_dataset, example_dir, samples_path)
+    m = Model(training_dataset, example_dir, samples_path)
 
     # Train the random forest:
-    r2scores = rf.train(num_trees=1000, num_jobs=1)
+    r2scores = m.train(num_trees=1000, num_jobs=1)
     plt.show()
 
-The `~hela.RandomForest.train` method returns a dictionary called `r2scores`
+The `~hela.Model.train` method returns a dictionary called `r2scores`
 which contains the :math:`R^2` scores of the slope and intercept, which should
 both be close to unity for this example.
 
 Finally, let's estimate the posterior distributions for the slope and intercept
 using the trained random forest on the sample data in ``samples_path``, where
 the true values of the slope and intercept are :math:`m=0.3` and :math:`b=0.5`
-using the `~hela.RandomForest.predict` method:
+using the `~hela.Model.predict` method:
 
 .. code-block:: python
 
     # Predict posterior distributions from random forest
-    posterior = rf.predict(plot_posterior=True)
+    posterior = m.predict()
     posterior_slopes, posterior_intercepts = posterior.samples.T
     plt.show()
 
@@ -97,14 +97,14 @@ using the `~hela.RandomForest.predict` method:
     # Generate an example dataset directory
     example_dir, training_dataset, samples_path = generate_example_data()
 
-    from hela import RandomForest
+    from hela import Model
     import matplotlib.pyplot as plt
 
     # Initialize a random forest object:
-    rf = RandomForest(training_dataset, example_dir, samples_path)
+    m = Model(training_dataset, example_dir, samples_path)
 
     # Predict posterior distributions from random forest
-    posterior = rf.predict(plot_posterior=True)
+    posterior = m.predict()
     posterior_slopes, posterior_intercepts = posterior.samples.T
     plt.tight_layout()
     plt.show()

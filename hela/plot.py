@@ -9,7 +9,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 from tqdm import tqdm
 
-from .models import resample_posterior
+from .wrapper import resample_posterior
 from .wpercentile import wmedian
 
 __all__ = ['plot_predicted_vs_real', 'plot_feature_importances',
