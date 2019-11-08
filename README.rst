@@ -7,7 +7,8 @@
     :target: https://arxiv.org/abs/1806.03944
     :alt: arXiv paper
 
-A Random Forest retrieval algorithm, here used to perform atmospheric retrieval on exoplanet atmospheres.
+A Random Forest retrieval algorithm, here used to perform atmospheric retrieval 
+    on exoplanet atmospheres.
 
 Legacy API
 ++++++++++
@@ -19,9 +20,11 @@ legacy branch of the package.
 Citation
 ++++++++
 
-If you use HELA in your work, please cite [Marquez-Neila et al. 2018](https://ui.adsabs.harvard.edu/abs/2018NatAs...2..719M/abstract):
+If you use HELA in your work, please cite 
+`Marquez-Neila et al. 2018 <https://ui.adsabs.harvard.edu/abs/2018NatAs...2..719M/abstract>`_:
 
 .. code-block::
+
     @ARTICLE{2018NatAs...2..719M,
            author = {{M{\'a}rquez-Neila}, Pablo and {Fisher}, Chloe and {Sznitman}, Raphael and
              {Heng}, Kevin},
