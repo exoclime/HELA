@@ -150,7 +150,8 @@ class Model(object):
         fig, axes = plot_feature_importances(forests=forests,
                                              names=(self.dataset.names +
                                                     ["joint prediction"]),
-                                             colors=self.dataset.colors + ["C0"])
+                                             colors=(self.dataset.colors +
+                                                     ["C0"]))
 
         fig.savefig(os.path.join(self.output_path, "feature_importances.pdf"),
                     bbox_inches='tight')
