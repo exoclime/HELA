@@ -159,6 +159,20 @@ class Model(object):
             self.data_y, leaves_x
         )
 
+class Posterior(object):
+    """
+    Posteriors are represented as a collection of weighted samples
+    """
+    def __init__(self, samples, weights):
+        """
+        Parameters
+        ----------
+        samples : `~numpy.ndarray`
+        weights : `~numpy.ndarray`
+        """
+        self.samples = samples
+        self.weights = weights
+
 def _posterior(data_leaves, data_weights, data_y, query_leaves):
 
     weights_x = (query_leaves[:, None] == data_leaves) * data_weights
@@ -238,9 +252,6 @@ def _tree_weights(tree, n_samples):
     indices = _generate_sample_indices(tree.random_state, n_samples)
     res = np.bincount(indices, minlength=n_samples)
     return _as_smallest_udtype(res)
-
-# Posteriors are represented as a collection of weighted samples
-Posterior = namedtuple("Posterior", ["samples", "weights"])
 
 def resample_posterior(posterior, num_draws):
 
