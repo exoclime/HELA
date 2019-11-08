@@ -15,7 +15,7 @@ which we'd like to predict on:
     # Generate an example dataset directory
     example_dir, training_dataset, samples_path = generate_example_data()
 
-What did that just do? We created an example directory called ``linear_data``,
+This handy command created an example directory called ``linear_data``,
 which contains a training dataset described by the metadata file located at path
 ``training_dataset``. This training dataset contains a JSON file describing the
 free parameters, which looks like this:
