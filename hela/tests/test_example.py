@@ -23,5 +23,6 @@ def test_linear_end_to_end():
 
     # Do a very generous check that the posterior distributions match
     # the expected values
-    assert abs(posterior_slopes.mean() - 0.3) < 0.1
-    assert abs(posterior_intercepts.mean() - 0.5) < 0.1
+    assert abs(posterior_slopes.mean() - 0.3) < 3 * posterior_slopes.std()
+    assert (abs(posterior_intercepts.mean() - 0.5) <
+            3 * posterior_intercepts.std())
