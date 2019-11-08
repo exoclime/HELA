@@ -57,6 +57,9 @@ train the random forest with 1000 trees and on a single processor:
 
     # Train the random forest:
     r2scores = m.train(num_trees=1000, num_jobs=1)
+
+    # Plot the results:
+    m.plot_correlations()
     plt.show()
 
 .. plot::
@@ -73,6 +76,7 @@ train the random forest with 1000 trees and on a single processor:
 
     # Train the random forest:
     r2scores = m.train(num_trees=1000, num_jobs=1)
+    m.plot_correlations()
     plt.show()
 
 The `~hela.Model.train` method returns a dictionary called `r2scores`
@@ -89,6 +93,9 @@ using the `~hela.Model.predict` method:
     # Predict posterior distributions from random forest
     posterior = m.predict()
     posterior_slopes, posterior_intercepts = posterior.samples.T
+
+    # Plot the posteriors
+    m.plot_posterior()
     plt.show()
 
 .. plot::
@@ -106,6 +113,7 @@ using the `~hela.Model.predict` method:
     # Predict posterior distributions from random forest
     posterior = m.predict()
     posterior_slopes, posterior_intercepts = posterior.samples.T
+    m.plot_posterior()
     plt.tight_layout()
     plt.show()
 

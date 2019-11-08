@@ -24,7 +24,7 @@ def train_model(dataset, num_trees, num_jobs, verbose=1):
     return pipeline
 
 
-def test_model(model, dataset, output_path):
+def test_model(model, dataset):
     if dataset.testing_x is None:
         return
 
@@ -36,11 +36,7 @@ def test_model(model, dataset, output_path):
     for name, values in r2scores.items():
         print("\tR^2 score for {}: {:.3f}".format(name, values))
 
-    fig, axes = plot_predicted_vs_real(dataset.testing_y, pred, dataset.names,
-                                       dataset.ranges)
-    fig.savefig(os.path.join(output_path, "predicted_vs_real.pdf"),
-                bbox_inches='tight')
-    return r2scores
+    return pred, r2scores
 
 
 def compute_feature_importance(model, dataset):
@@ -77,6 +73,7 @@ class Model(object):
         self._feature_importance = None
         self._posterior = None
         self.oob = None
+        self.pred = None
 
     def train(self, num_trees=1000, num_jobs=5, quiet=False):
         """
@@ -109,9 +106,24 @@ class Model(object):
         print("OOB score: {:.4f}".format(self.model.rf.oob_score_))
         self.oob = self.model.rf.oob_score_
 
-        r2scores = test_model(self.model, self.dataset, self.model_path)
-
+        pred, r2scores = test_model(self.model, self.dataset)
+        self.pred = pred
         return r2scores
+
+    def plot_correlations(self):
+        """
+        Plot training correlations.
+
+        Returns
+        -------
+        fig, axes
+        """
+        fig, axes = plot_predicted_vs_real(self.dataset.testing_y, self.pred,
+                                           self.dataset.names,
+                                           self.dataset.ranges)
+        fig.savefig(os.path.join(self.output_path, "predicted_vs_real.pdf"),
+                    bbox_inches='tight')
+        return fig, axes
 
     def feature_importance(self):
         """
