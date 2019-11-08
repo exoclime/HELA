@@ -8,6 +8,7 @@ import joblib
 from .dataset import load_dataset, load_data_file
 from .models import Model
 from .plot import predicted_vs_real, feature_importances, posterior_matrix
+from .wpercentile import wpercentile
 
 __all__ = ['RandomForest', 'generate_example_data']
 
@@ -57,9 +58,11 @@ def compute_feature_importance(model, dataset, output_path):
     return np.array([forest_i.feature_importances_ for forest_i in forests])
 
 
-def prediction_ranges(preds):
-    percentiles = (np.percentile(pred_i, [50, 16, 84]) for pred_i in preds.T)
-    return np.array([(a, c - a, a - b) for a, b, c in percentiles])
+    def data_ranges(posterior, percentiles=(50, 16, 84)):
+        samples, weights = posterior
+        values = wpercentile(samples, weights, percentiles, axis=0)
+        ranges = np.array([values[0], values[2]-values[0], values[0]-values[1]])
+        return ranges.T
 
 
 class RandomForest(object):
@@ -128,6 +131,7 @@ class RandomForest(object):
         -------
         feature_importances : `~numpy.ndarray`
         """
+        self.model.enable_posterior = False
         return compute_feature_importance(self.model, self.dataset,
                                           self.model_path)
 
@@ -152,25 +156,29 @@ class RandomForest(object):
         # Loading data from '{}'...".format(data_file)
         data, _ = load_data_file(self.data_file, model.rf.n_features_)
 
-        preds = model.trees_predict(data[0])
+        posterior = model.posterior(data[0])
 
-        pred_ranges = prediction_ranges(preds)
-
-        for name_i, pred_range_i in zip(model.names, pred_ranges):
+        posterior_ranges = data_ranges(posterior)
+        for name_i, pred_range_i in zip(model.names, posterior_ranges):
             print("Prediction for {}: {:.3g} "
                   "[+{:.3g} -{:.3g}]".format(name_i, *pred_range_i))
 
         if plot_posterior:
             # Plotting and saving the posterior matrix..."
-            fig = posterior_matrix(preds, None,
+            fig = posterior_matrix(posterior,
                                    names=model.names,
                                    ranges=model.ranges,
                                    colors=model.colors)
             os.makedirs(self.output_path, exist_ok=True)
             fig.savefig(os.path.join(self.output_path, "posterior_matrix.pdf"),
                         bbox_inches='tight')
-        return preds.T
+        return posterior
 
+def data_ranges(posterior, percentiles=(50, 16, 84)):
+    samples, weights = posterior
+    values = wpercentile(samples, weights, percentiles, axis=0)
+    ranges = np.array([values[0], values[2]-values[0], values[0]-values[1]])
+    return ranges.T
 
 def generate_example_data():
     """
