@@ -58,13 +58,6 @@ def compute_feature_importance(model, dataset, output_path):
     return np.array([forest_i.feature_importances_ for forest_i in forests])
 
 
-    def data_ranges(posterior, percentiles=(50, 16, 84)):
-        samples, weights = posterior
-        values = wpercentile(samples, weights, percentiles, axis=0)
-        ranges = np.array([values[0], values[2]-values[0], values[0]-values[1]])
-        return ranges.T
-
-
 class RandomForest(object):
     """
     A class for a random forest.
@@ -91,10 +84,9 @@ class RandomForest(object):
 
         Parameters
         ----------
-        num_trees
-        num_jobs
-        quiet
-        kwargs
+        num_trees : int
+        num_jobs : int
+        quiet : bool
 
         Returns
         -------
@@ -122,11 +114,6 @@ class RandomForest(object):
         """
         Compute feature importance.
 
-        Parameters
-        ----------
-        model
-        dataset
-
         Returns
         -------
         feature_importances : `~numpy.ndarray`
@@ -141,7 +128,7 @@ class RandomForest(object):
 
         Parameters
         ----------
-        plot_posterior
+        plot_posterior : bool
 
         Returns
         -------
@@ -175,6 +162,18 @@ class RandomForest(object):
         return posterior
 
 def data_ranges(posterior, percentiles=(50, 16, 84)):
+    """
+    Return posterior ranges.
+
+    Parameters
+    ----------
+    posterior : `~numpy.ndarray`
+    percentiles : tuple
+
+    Returns
+    -------
+    ranges : `~numpy.ndarray`
+    """
     samples, weights = posterior
     values = wpercentile(samples, weights, percentiles, axis=0)
     ranges = np.array([values[0], values[2]-values[0], values[0]-values[1]])

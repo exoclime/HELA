@@ -89,7 +89,6 @@ using the trained random forest on the sample data in ``samples_path``:
     plt.close()
 
     # Predict posterior distirbutions from random forest
-    posterior_slopes, posterior_intercepts = rf.predict(plot_posterior=True)
     plt.tight_layout()
     plt.show()
 
