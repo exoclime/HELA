@@ -31,6 +31,7 @@ class Dataset(object):
         self.ranges = ranges
         self.colors = colors
 
+
 def load_data_file(data_file, num_features):
     data = np.load(data_file)
 

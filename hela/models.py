@@ -213,10 +213,8 @@ def _posterior_percentile_cache(data_leaves, data_weights, data_y,
                                 query_leaves, percentile):
     # Build a dictionary for fast access of the contents of the leaves.
     # Building cache...
-    cache = [
-        _build_leaves_cache(leaves_i, weights_i)
-        for leaves_i, weights_i in zip(data_leaves, data_weights)
-        ]
+    cache = [_build_leaves_cache(leaves_i, weights_i)
+             for leaves_i, weights_i in zip(data_leaves, data_weights)]
 
     values = []
     # Check the contents of the leaves in leaves_x

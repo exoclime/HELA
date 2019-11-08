@@ -64,10 +64,7 @@ env:
         # line to use the X virtual framebuffer.
         # - SETUP_XVFB=True
 
-        # If you want to ignore certain flake8 errors, you can list them
-        # in FLAKE8_OPT, for example:
-        # - FLAKE8_OPT='--ignore=E501'
-        - FLAKE8_OPT=''
+        - FLAKE8_OPT='--ignore=E501,W504'
 
 matrix:
 

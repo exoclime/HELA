@@ -275,8 +275,8 @@ def _min_max_scaler(ranges, feature_range=(0, 100)):
     res.data_max_ = ranges[:, 1]
     res.data_min_ = ranges[:, 0]
     res.data_range_ = res.data_max_ - res.data_min_
-    res.scale_ = (feature_range[1] - feature_range[0]) / (
-    ranges[:, 1] - ranges[:, 0])
+    res.scale_ = ((feature_range[1] - feature_range[0]) /
+                  (ranges[:, 1] - ranges[:, 0]))
     res.min_ = -res.scale_ * res.data_min_
     res.n_samples_seen_ = 1
     res.feature_range = feature_range
