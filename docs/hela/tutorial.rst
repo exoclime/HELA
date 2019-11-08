@@ -16,8 +16,23 @@ which we'd like to predict on:
     example_dir, training_dataset, samples_path = generate_example_data()
 
 What did that just do? We created an example directory called ``linear_data``,
-which contains a training dataset described by the metadata file
-``training_dataset``. This training dataset has...
+which contains a training dataset described by the metadata file located at path
+``training_dataset``. This training dataset contains a JSON file describing the
+free parameters, which looks like this:
+
+.. code-block:: python
+
+    {"metadata":
+        {"names": ["slope", "intercept"],
+         "ranges": [[0, 1], [0, 1]],
+         "colors": ["#F14532", "#4a98c9"],
+         "num_features": 1000},
+     "training_data": "training.npy",
+     "testing_data": "testing.npy"}
+
+This file tells the model what the two fitting parameters are and their rainges,
+where to grab the training and testing datasets (in the npy pickle files), the
+number of features (1000), the colors to use for each parameter in the plots.
 
 We also generated a bunch of samples with a known slope and intercept, called
 ``samples_path``, on which we'll apply our trained random forest to estimate
@@ -61,7 +76,8 @@ train the random forest with 1000 trees and on a single processor:
     plt.show()
 
 The `~hela.RandomForest.train` method returns a dictionary called `r2scores`
-which contains the :math:`R^2` scores of the slope and intercept.
+which contains the :math:`R^2` scores of the slope and intercept, which should
+both be close to unity for this example.
 
 Finally, let's estimate the posterior distributions for the slope and intercept
 using the trained random forest on the sample data in ``samples_path``, where
@@ -70,7 +86,7 @@ using the `~hela.RandomForest.predict` method:
 
 .. code-block:: python
 
-    # Predict posterior distirbutions from random forest
+    # Predict posterior distributions from random forest
     samples, weights = rf.predict(plot_posterior=True)
     posterior_slopes, posterior_intercepts = samples.T
     plt.show()

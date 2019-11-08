@@ -1,16 +1,35 @@
 import os
 import json
-from collections import namedtuple
 
 import numpy as np
 
 __all__ = ["Dataset", "load_dataset", "load_data_file"]
 
 
-Dataset = namedtuple("Dataset", ["training_x", "training_y",
-                                 "testing_x", "testing_y",
-                                 "names", "ranges", "colors"])
-
+class Dataset(object):
+    """
+    Class for a dataset used for training the random forest.
+    """
+    def __init__(self, training_x, training_y, testing_x, testing_y, names,
+                 ranges, colors):
+        """
+        Parameters
+        ----------
+        training_x : `~numpy.ndarray`
+        training_y : `~numpy.ndarray`
+        testing_x : `~numpy.ndarray`
+        testing_y : `~numpy.ndarray`
+        names : list
+        ranges : list
+        colors : list
+        """
+        self.training_x = training_x
+        self.training_y = training_y
+        self.testing_x = testing_x
+        self.testing_y = testing_y
+        self.names = names
+        self.ranges = ranges
+        self.colors = colors
 
 def load_data_file(data_file, num_features):
     data = np.load(data_file)
@@ -61,4 +80,3 @@ def load_dataset(dataset_file):
 
     return Dataset(training_x, training_y, testing_x, testing_y,
                    metadata["names"], metadata["ranges"], metadata["colors"])
-

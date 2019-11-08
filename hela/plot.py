@@ -13,12 +13,28 @@ from .models import resample_posterior
 from .wpercentile import wmedian
 
 
-__all__ = ['predicted_vs_real', 'feature_importances', 'posterior_matrix']
+__all__ = ['plot_predicted_vs_real', 'plot_feature_importances',
+           'plot_posterior_matrix']
 
 POSTERIOR_MAX_SIZE = 10000
 
 
-def predicted_vs_real(y_real, y_pred, names, ranges, alpha='auto'):
+def plot_predicted_vs_real(y_real, y_pred, names, ranges, alpha='auto'):
+    """
+    Plot predicted and real parameter values.
+
+    Parameters
+    ----------
+    y_real
+    y_pred
+    names
+    ranges
+    alpha
+
+    Returns
+    -------
+
+    """
     num_plots = y_pred.shape[1]
     num_plot_rows = int(np.sqrt(num_plots))
     num_plot_cols = (num_plots - 1) // num_plot_rows + 1
@@ -59,7 +75,20 @@ def predicted_vs_real(y_real, y_pred, names, ranges, alpha='auto'):
     return fig
 
 
-def feature_importances(forests, names, colors):
+def plot_feature_importances(forests, names, colors):
+    """
+    Plot the feature importances.
+
+    Parameters
+    ----------
+    forests
+    names
+    colors
+
+    Returns
+    -------
+
+    """
     num_plots = len(forests)
     num_plot_rows = (num_plots - 1) // 2 + 1
     num_plot_cols = 2
@@ -81,8 +110,22 @@ def feature_importances(forests, names, colors):
     return fig
 
 
-def posterior_matrix(posterior, names, ranges, colors, soft_colors=None):
+def plot_posterior_matrix(posterior, names, ranges, colors, soft_colors=None):
+    """
+    Plot the posterior matrix.
 
+    Parameters
+    ----------
+    posterior
+    names
+    ranges
+    colors
+    soft_colors
+
+    Returns
+    -------
+
+    """
     samples, weights = posterior
 
     cmaps = [LinearSegmentedColormap.from_list("MyReds", [(1, 1, 1), c], N=256)

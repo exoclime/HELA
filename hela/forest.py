@@ -7,7 +7,7 @@ import joblib
 
 from .dataset import load_dataset, load_data_file
 from .models import Model
-from .plot import predicted_vs_real, feature_importances, posterior_matrix
+from .plot import plot_predicted_vs_real, plot_feature_importances, plot_posterior_matrix
 from .wpercentile import wpercentile
 
 __all__ = ['RandomForest', 'generate_example_data']
@@ -35,8 +35,8 @@ def test_model(model, dataset, output_path):
     for name, values in r2scores.items():
         print("\tR^2 score for {}: {:.3f}".format(name, values))
 
-    fig = predicted_vs_real(dataset.testing_y, pred, dataset.names,
-                            dataset.ranges)
+    fig = plot_predicted_vs_real(dataset.testing_y, pred, dataset.names,
+                                 dataset.ranges)
     fig.savefig(os.path.join(output_path, "predicted_vs_real.pdf"),
                 bbox_inches='tight')
     return r2scores
@@ -48,7 +48,7 @@ def compute_feature_importance(model, dataset, output_path):
 
     forests = [i.rf for i in regr.estimators_] + [model.rf]
 
-    fig = feature_importances(
+    fig = plot_feature_importances(
                 forests=[i.rf for i in regr.estimators_] + [model.rf],
                 names=dataset.names + ["joint prediction"],
                 colors=dataset.colors + ["C0"])
@@ -156,10 +156,10 @@ class RandomForest(object):
 
         if plot_posterior:
             # Plotting and saving the posterior matrix..."
-            fig = posterior_matrix(posterior,
-                                   names=model.names,
-                                   ranges=model.ranges,
-                                   colors=model.colors)
+            fig = plot_posterior_matrix(posterior,
+                                        names=model.names,
+                                        ranges=model.ranges,
+                                        colors=model.colors)
             os.makedirs(self.output_path, exist_ok=True)
             fig.savefig(os.path.join(self.output_path, "posterior_matrix.pdf"),
                         bbox_inches='tight')
