@@ -85,7 +85,7 @@ both be close to unity for this example.
 
 Finally, let's estimate the posterior distributions for the slope and intercept
 using the trained random forest on the sample data in ``samples_path``, where
-the true values of the slope and intercept are :math:`m=0.3` and :math:`b=0.5`
+the true values of the slope and intercept are :math:`m=0.2` and :math:`b=0.5`
 using the `~hela.Model.predict` method:
 
 .. code-block:: python
