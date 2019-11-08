@@ -87,8 +87,8 @@ using the `~hela.RandomForest.predict` method:
 .. code-block:: python
 
     # Predict posterior distributions from random forest
-    samples, weights = rf.predict(plot_posterior=True)
-    posterior_slopes, posterior_intercepts = samples.T
+    posterior = rf.predict(plot_posterior=True)
+    posterior_slopes, posterior_intercepts = posterior.samples.T
     plt.show()
 
 .. plot::
@@ -107,9 +107,9 @@ using the `~hela.RandomForest.predict` method:
     r2scores = rf.train(num_trees=1000, num_jobs=1)
     plt.close()
 
-    # Predict posterior distirbutions from random forest
-    samples, weights = rf.predict(plot_posterior=True)
-    posterior_slopes, posterior_intercepts = samples.T
+    # Predict posterior distributions from random forest
+    posterior = rf.predict(plot_posterior=True)
+    posterior_slopes, posterior_intercepts = posterior.samples.T
     plt.tight_layout()
     plt.show()
 

@@ -12,9 +12,10 @@ The set-up here is simply a Random Forest algorithm, for use on a training set p
 
 HELA is developed for use with Python 3 and requires the following packages:
 - numpy
-- sklearn
 - matplotlib
-
+- sklearn
+- tqdm
+- joblib
 
 ## Running HELA
 

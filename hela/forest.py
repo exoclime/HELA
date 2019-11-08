@@ -179,8 +179,8 @@ def data_ranges(posterior, percentiles=(50, 16, 84)):
     -------
     ranges : `~numpy.ndarray`
     """
-    samples, weights = posterior
-    values = wpercentile(samples, weights, percentiles, axis=0)
+    values = wpercentile(posterior.samples, posterior.weights,
+                         percentiles, axis=0)
     ranges = np.array([values[0], values[2]-values[0], values[0]-values[1]])
     return ranges.T
 

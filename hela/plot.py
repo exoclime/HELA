@@ -125,8 +125,6 @@ def plot_posterior_matrix(posterior, names, ranges, colors, soft_colors=None):
     -------
 
     """
-    samples, weights = posterior
-
     cmaps = [LinearSegmentedColormap.from_list("MyReds", [(1, 1, 1), c], N=256)
              for c in colors]
 
@@ -135,7 +133,7 @@ def plot_posterior_matrix(posterior, names, ranges, colors, soft_colors=None):
     if soft_colors is None:
         soft_colors = colors
 
-    num_dims = samples.shape[1]
+    num_dims = posterior.samples.shape[1]
 
     fig, axes = plt.subplots(nrows=num_dims, ncols=num_dims,
                              figsize=(2 * num_dims, 2 * num_dims))
@@ -190,14 +188,14 @@ def plot_posterior_matrix(posterior, names, ranges, colors, soft_colors=None):
             )
         else:
             histogram, bins = _histogram1d(
-                samples[:, dims[:1]], weights,
+                posterior.samples[:, dims[:1]], posterior.weights,
                 ranges=ranges[dims[:1]]
             )
             ax.bar(bins[:-1], histogram, color=soft_colors[dims[0]],
                    width=bins[1] - bins[0])
 
             kd_probs = histogram
-            expected = wmedian(samples[:, dims[0]], weights)
+            expected = wmedian(posterior.samples[:, dims[0]], posterior.weights)
             ax.plot([expected, expected], [0, 1.1 * kd_probs.max()], '-',
                     linewidth=1, color='#222222')
 
@@ -211,15 +209,14 @@ def plot_posterior_matrix(posterior, names, ranges, colors, soft_colors=None):
 
 
 def _plot_histogram2d(ax, posterior, color, cmap, dims, ranges):
-    samples, weights = posterior
     # For efficiency, do not compute the kernel density
     # over all the samples of the posterior. Subsample first.
-    if len(samples) > POSTERIOR_MAX_SIZE:
-        samples, weights = resample_posterior(posterior, POSTERIOR_MAX_SIZE)
+    if len(posterior.samples) > POSTERIOR_MAX_SIZE:
+        posterior = resample_posterior(posterior, POSTERIOR_MAX_SIZE)
 
     locations, kd_probs, *_ = _kernel_density_joint(
-        samples[:, dims],
-        weights,
+        posterior.samples[:, dims],
+        posterior.weights,
         ranges
     )
     ax.contour(
@@ -230,14 +227,13 @@ def _plot_histogram2d(ax, posterior, color, cmap, dims, ranges):
     )
 
     # For the rest of the plot we use the complete posterior
-    samples, weights = posterior
     histogram, grid_x, grid_y = _histogram2d(
-        samples[:, dims], weights,
+        posterior.samples[:, dims], posterior.weights,
         ranges
     )
     ax.pcolormesh(grid_x, grid_y, histogram, cmap=cmap)
 
-    expected = wmedian(samples[:, dims], weights, axis=0)
+    expected = wmedian(posterior.samples[:, dims], posterior.weights, axis=0)
     ax.plot([expected[0], expected[0]], [ranges[1][0], ranges[1][1]],
             '-', linewidth=1, color='#222222')
     ax.plot([ranges[0][0], ranges[0][1]], [expected[1], expected[1]],
@@ -253,17 +249,15 @@ def _plot_samples(ax, posterior, color, dims, ranges):
     if len(posterior.samples) > POSTERIOR_MAX_SIZE:
         posterior = resample_posterior(posterior, POSTERIOR_MAX_SIZE)
 
-    samples, weights = posterior
-
-    points_alpha = _weights_to_alpha(weights)
+    points_alpha = _weights_to_alpha(posterior.weights)
 
     current_colors = to_rgba_array(color)
-    current_colors = np.tile(current_colors, (len(samples), 1))
+    current_colors = np.tile(current_colors, (len(posterior.samples), 1))
     current_colors[:, 3] = points_alpha
 
     ax.scatter(
-        x=samples[:, dims[0]],
-        y=samples[:, dims[1]],
+        x=posterior.samples[:, dims[0]],
+        y=posterior.samples[:, dims[1]],
         s=100,
         c=current_colors,
         marker='.',
