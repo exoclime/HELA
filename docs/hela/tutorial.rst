@@ -103,10 +103,6 @@ using the `~hela.RandomForest.predict` method:
     # Initialize a random forest object:
     rf = RandomForest(training_dataset, example_dir, samples_path)
 
-    # Train the random forest:
-    r2scores = rf.train(num_trees=1000, num_jobs=1)
-    plt.close()
-
     # Predict posterior distributions from random forest
     posterior = rf.predict(plot_posterior=True)
     posterior_slopes, posterior_intercepts = posterior.samples.T
