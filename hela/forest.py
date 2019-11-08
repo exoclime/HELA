@@ -7,7 +7,8 @@ import joblib
 
 from .dataset import load_dataset, load_data_file
 from .models import Model
-from .plot import plot_predicted_vs_real, plot_feature_importances, plot_posterior_matrix
+from .plot import (plot_predicted_vs_real, plot_feature_importances,
+                   plot_posterior_matrix)
 from .wpercentile import wpercentile
 
 __all__ = ['RandomForest', 'generate_example_data']

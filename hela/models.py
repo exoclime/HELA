@@ -15,6 +15,7 @@ class Model(object):
     """
     Class for models.
     """
+
     def __init__(self, num_trees, num_jobs, names, ranges, colors,
                  verbose=1, enable_posterior=True):
         """
@@ -92,7 +93,8 @@ class Model(object):
         if self.enable_posterior:
             data_leaves = self.rf.apply(x).T
             self.data_leaves = _as_smallest_udtype(data_leaves)
-            self.data_weights = np.array([_tree_weights(tree, len(y)) for tree in self.rf])
+            self.data_weights = np.array(
+                [_tree_weights(tree, len(y)) for tree in self.rf])
             self.data_y = y
 
     def predict(self, x):
@@ -159,10 +161,12 @@ class Model(object):
             self.data_y, leaves_x
         )
 
+
 class Posterior(object):
     """
     Posteriors are represented as a collection of weighted samples
     """
+
     def __init__(self, samples, weights):
         """
         Parameters
@@ -173,8 +177,8 @@ class Posterior(object):
         self.samples = samples
         self.weights = weights
 
-def _posterior(data_leaves, data_weights, data_y, query_leaves):
 
+def _posterior(data_leaves, data_weights, data_y, query_leaves):
     weights_x = (query_leaves[:, None] == data_leaves) * data_weights
     weights_x = _as_smallest_udtype(weights_x.sum(0))
 
@@ -186,8 +190,8 @@ def _posterior(data_leaves, data_weights, data_y, query_leaves):
     return Posterior(samples, weights)
 
 
-def _posterior_percentile_nocache(data_leaves, data_weights, data_y, query_leaves, percentile):
-
+def _posterior_percentile_nocache(data_leaves, data_weights, data_y,
+                                  query_leaves, percentile):
     values = []
 
     # Computing percentiles...
@@ -203,14 +207,14 @@ def _posterior_percentile_nocache(data_leaves, data_weights, data_y, query_leave
     return np.array(values)
 
 
-def _posterior_percentile_cache(data_leaves, data_weights, data_y, query_leaves, percentile):
-
+def _posterior_percentile_cache(data_leaves, data_weights, data_y, query_leaves,
+                                percentile):
     # Build a dictionary for fast access of the contents of the leaves.
     # Building cache...
     cache = [
         _build_leaves_cache(leaves_i, weights_i)
         for leaves_i, weights_i in zip(data_leaves, data_weights)
-    ]
+        ]
 
     values = []
     # Check the contents of the leaves in leaves_x
@@ -227,7 +231,6 @@ def _posterior_percentile_cache(data_leaves, data_weights, data_y, query_leaves,
 
 
 def _build_leaves_cache(leaves, weights):
-
     result = {}
     for index, (leaf, weight) in enumerate(zip(leaves, weights)):
         if weight == 0:
@@ -253,8 +256,8 @@ def _tree_weights(tree, n_samples):
     res = np.bincount(indices, minlength=n_samples)
     return _as_smallest_udtype(res)
 
-def resample_posterior(posterior, num_draws):
 
+def resample_posterior(posterior, num_draws):
     p = posterior.weights / posterior.weights.sum()
     indices = np.random.choice(len(posterior.samples), size=num_draws, p=p)
 
@@ -265,12 +268,12 @@ def resample_posterior(posterior, num_draws):
 
     return Posterior(new_samples, new_weights)
 
+
 def _as_smallest_udtype(arr):
     return arr.astype(_smallest_udtype(arr.max()))
 
 
 def _smallest_udtype(value):
-
     dtypes = [np.uint8, np.uint16, np.uint32, np.uint64]
 
     for dtype in dtypes:

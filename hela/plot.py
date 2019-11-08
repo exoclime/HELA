@@ -12,7 +12,6 @@ from tqdm import tqdm
 from .models import resample_posterior
 from .wpercentile import wmedian
 
-
 __all__ = ['plot_predicted_vs_real', 'plot_feature_importances',
            'plot_posterior_matrix']
 
@@ -145,7 +144,7 @@ def plot_posterior_matrix(posterior, names, ranges, colors, soft_colors=None):
                         hspace=0.05, wspace=0.05)
 
     iterable = zip(axes.flat, product(range(num_dims), range(num_dims)))
-    for ax, dims in tqdm(iterable, total=num_dims**2):
+    for ax, dims in tqdm(iterable, total=num_dims ** 2):
         # Flip dims.
         dims = [dims[1], dims[0]]
 
@@ -195,7 +194,7 @@ def plot_posterior_matrix(posterior, names, ranges, colors, soft_colors=None):
                 ranges=ranges[dims[:1]]
             )
             ax.bar(bins[:-1], histogram, color=soft_colors[dims[0]],
-                   width=bins[1]-bins[0])
+                   width=bins[1] - bins[0])
 
             kd_probs = histogram
             expected = wmedian(samples[:, dims[0]], weights)
@@ -210,8 +209,8 @@ def plot_posterior_matrix(posterior, names, ranges, colors, soft_colors=None):
     # fig.tight_layout(pad=0)
     return fig
 
-def _plot_histogram2d(ax, posterior, color, cmap, dims, ranges):
 
+def _plot_histogram2d(ax, posterior, color, cmap, dims, ranges):
     samples, weights = posterior
     # For efficiency, do not compute the kernel density
     # over all the samples of the posterior. Subsample first.
@@ -250,7 +249,6 @@ def _plot_histogram2d(ax, posterior, color, cmap, dims, ranges):
 
 
 def _plot_samples(ax, posterior, color, dims, ranges):
-
     # For efficiency, do not plot all the samples of the posterior. Subsample first.
     if len(posterior.samples) > POSTERIOR_MAX_SIZE:
         posterior = resample_posterior(posterior, POSTERIOR_MAX_SIZE)
@@ -281,15 +279,15 @@ def _min_max_scaler(ranges, feature_range=(0, 100)):
     res.data_max_ = ranges[:, 1]
     res.data_min_ = ranges[:, 0]
     res.data_range_ = res.data_max_ - res.data_min_
-    res.scale_ = (feature_range[1] - feature_range[0]) / (ranges[:, 1] - ranges[:, 0])
+    res.scale_ = (feature_range[1] - feature_range[0]) / (
+    ranges[:, 1] - ranges[:, 0])
     res.min_ = -res.scale_ * res.data_min_
     res.n_samples_seen_ = 1
     res.feature_range = feature_range
     return res
 
 
-def _kernel_density_joint(samples, weights, ranges, bandwidth=1/25):
-
+def _kernel_density_joint(samples, weights, ranges, bandwidth=1 / 25):
     ndims = len(ranges)
 
     scaler = _min_max_scaler(ranges, feature_range=(0, 100))
@@ -313,8 +311,7 @@ def _kernel_density_joint(samples, weights, ranges, bandwidth=1/25):
 
 
 def _histogram1d(samples, weights, ranges, bins=20):
-
-    assert(len(ranges) == 1)
+    assert (len(ranges) == 1)
 
     histogram, edges = np.histogram(
         samples[:, 0],
@@ -326,8 +323,7 @@ def _histogram1d(samples, weights, ranges, bins=20):
 
 
 def _histogram2d(samples, weights, ranges, bins=20):
-
-    assert(len(ranges) == 2)
+    assert (len(ranges) == 2)
 
     histogram, xedges, yedges = np.histogram2d(
         samples[:, 0],
@@ -341,7 +337,6 @@ def _histogram2d(samples, weights, ranges, bins=20):
 
 
 def _weights_to_alpha(weights):
-
     # Maximum weight (removing potential outliers)
     max_weight = np.percentile(weights, 98)
     return np.clip(weights / max_weight, 0, 1)
