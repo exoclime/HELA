@@ -71,7 +71,7 @@ def plot_predicted_vs_real(y_real, y_pred, names, ranges, alpha='auto'):
         ax.legend(loc="upper left", fontsize=14)
 
     fig.tight_layout()
-    return fig
+    return fig, axes
 
 
 def plot_feature_importances(forests, names, colors):
@@ -106,7 +106,7 @@ def plot_feature_importances(forests, names, colors):
         ax.grid()
 
     fig.tight_layout()
-    return fig
+    return fig, axes
 
 
 def plot_posterior_matrix(posterior, names, ranges, colors, soft_colors=None):
@@ -206,7 +206,7 @@ def plot_posterior_matrix(posterior, names, ranges, colors, soft_colors=None):
     # fig.tight_layout(pad=0)
 
     # fig.tight_layout(pad=0)
-    return fig
+    return fig, axes
 
 
 def _plot_histogram2d(ax, posterior, color, cmap, dims, ranges):

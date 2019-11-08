@@ -18,7 +18,7 @@ def test_linear_end_to_end():
     assert abs(r2scores['intercept'] - 1) < 0.01
 
     # Predict posterior distributions from random forest
-    posterior = rf.predict(plot_posterior=False)
+    posterior = rf.predict()
     posterior_slopes, posterior_intercepts = posterior.samples.T
 
     # Do a very generous check that the posterior distributions match

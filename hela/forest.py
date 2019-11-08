@@ -36,26 +36,18 @@ def test_model(model, dataset, output_path):
     for name, values in r2scores.items():
         print("\tR^2 score for {}: {:.3f}".format(name, values))
 
-    fig = plot_predicted_vs_real(dataset.testing_y, pred, dataset.names,
-                                 dataset.ranges)
+    fig, axes = plot_predicted_vs_real(dataset.testing_y, pred, dataset.names,
+                                       dataset.ranges)
     fig.savefig(os.path.join(output_path, "predicted_vs_real.pdf"),
                 bbox_inches='tight')
     return r2scores
 
 
-def compute_feature_importance(model, dataset, output_path):
+def compute_feature_importance(model, dataset):
     regr = multioutput.MultiOutputRegressor(model, n_jobs=1)
     regr.fit(dataset.training_x, dataset.training_y)
 
     forests = [i.rf for i in regr.estimators_] + [model.rf]
-
-    fig = plot_feature_importances(
-        forests=[i.rf for i in regr.estimators_] + [model.rf],
-        names=dataset.names + ["joint prediction"],
-        colors=dataset.colors + ["C0"])
-
-    fig.savefig(os.path.join(output_path, "feature_importances.pdf"),
-                bbox_inches='tight')
     return np.array([forest_i.feature_importances_ for forest_i in forests])
 
 
@@ -82,6 +74,9 @@ class RandomForest(object):
 
         self.dataset = None
         self.model = None
+        self._feature_importance = None
+        self._posterior = None
+        self.oob = None
 
     def train(self, num_trees=1000, num_jobs=5, quiet=False):
         """
@@ -106,11 +101,13 @@ class RandomForest(object):
 
         os.makedirs(self.model_path, exist_ok=True)
         model_file = os.path.join(self.model_path, "model.pkl")
+
         # Saving model
         joblib.dump(self.model, model_file)
 
         # Printing model information...
         print("OOB score: {:.4f}".format(self.model.rf.oob_score_))
+        self.oob = self.model.rf.oob_score_
 
         r2scores = test_model(self.model, self.dataset, self.model_path)
 
@@ -124,11 +121,30 @@ class RandomForest(object):
         -------
         feature_importances : `~numpy.ndarray`
         """
-        self.model.enable_posterior = False
-        return compute_feature_importance(self.model, self.dataset,
-                                          self.model_path)
+        if self._feature_importance is None:
+            self._feature_importance = compute_feature_importance(self.model,
+                                                                  self.dataset)
+        return self._feature_importance
 
-    def predict(self, plot_posterior=True):
+    def plot_feature_importance(self):
+        """
+        Plot the feature importances.
+
+        Returns
+        -------
+        fig, axes
+        """
+        forests = self.feature_importance()
+        fig, axes = plot_feature_importances(forests=forests,
+                                             names=(self.dataset.names +
+                                                    ["joint prediction"]),
+                                             colors=self.dataset.colors + ["C0"])
+
+        fig.savefig(os.path.join(self.output_path, "feature_importances.pdf"),
+                    bbox_inches='tight')
+        return fig, axes
+
+    def predict(self, quiet=False):
         """
         Predict values from the trained random forest.
 
@@ -143,30 +159,46 @@ class RandomForest(object):
             number of samples/trees (check out attributes of model for
             metadata)
         """
+        if self._posterior is None:
+            model_file = os.path.join(self.model_path, "model.pkl")
+            # Loading random forest from '{}'...".format(model_file)
+            model = joblib.load(model_file)
+
+            # Loading data from '{}'...".format(data_file)
+            data, _ = load_data_file(self.data_file, model.rf.n_features_)
+
+            posterior = model.posterior(data[0])
+
+            if not quiet:
+                posterior_ranges = data_ranges(posterior)
+                for name_i, pred_range_i in zip(model.names, posterior_ranges):
+                    print("Prediction for {}: {:.3g} "
+                          "[+{:.3g} -{:.3g}]".format(name_i, *pred_range_i))
+
+            self._posterior = posterior
+
+        return self._posterior
+
+    def plot_posterior(self):
+        """
+        Plot the posterior distributions for each parameter.
+
+        Returns
+        -------
+        fig, axes
+        """
         model_file = os.path.join(self.model_path, "model.pkl")
         # Loading random forest from '{}'...".format(model_file)
         model = joblib.load(model_file)
 
-        # Loading data from '{}'...".format(data_file)
-        data, _ = load_data_file(self.data_file, model.rf.n_features_)
-
-        posterior = model.posterior(data[0])
-
-        posterior_ranges = data_ranges(posterior)
-        for name_i, pred_range_i in zip(model.names, posterior_ranges):
-            print("Prediction for {}: {:.3g} "
-                  "[+{:.3g} -{:.3g}]".format(name_i, *pred_range_i))
-
-        if plot_posterior:
-            # Plotting and saving the posterior matrix..."
-            fig = plot_posterior_matrix(posterior,
-                                        names=model.names,
-                                        ranges=model.ranges,
-                                        colors=model.colors)
-            os.makedirs(self.output_path, exist_ok=True)
-            fig.savefig(os.path.join(self.output_path, "posterior_matrix.pdf"),
-                        bbox_inches='tight')
-        return posterior
+        fig, axes = plot_posterior_matrix(self._posterior,
+                                          names=model.names,
+                                          ranges=model.ranges,
+                                          colors=model.colors)
+        os.makedirs(self.output_path, exist_ok=True)
+        fig.savefig(os.path.join(self.output_path, "posterior_matrix.pdf"),
+                    bbox_inches='tight')
+        return fig, axes
 
 
 def data_ranges(posterior, percentiles=(50, 16, 84)):
