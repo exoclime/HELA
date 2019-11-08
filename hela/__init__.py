@@ -3,7 +3,7 @@
 # Packages may add whatever they like to this file, but
 # should keep this content at the top.
 # ----------------------------------------------------------------------------
-from ._astropy_init import *
+from ._astropy_init import *  # noqa
 # ----------------------------------------------------------------------------
 
 # Enforce Python version check during package import.
@@ -25,7 +25,7 @@ if sys.version_info < tuple(
 
 if not _ASTROPY_SETUP_:
     # For egg_info test builds to pass, put package imports here.
-    from .forest import *
-    from .models import *
-    from .dataset import *
-    from .plot import *
+    from .forest import *  # noqa
+    from .models import *  # noqa
+    from .dataset import *  # noqa
+    from .plot import *  # noqa

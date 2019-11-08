@@ -50,9 +50,9 @@ def compute_feature_importance(model, dataset, output_path):
     forests = [i.rf for i in regr.estimators_] + [model.rf]
 
     fig = plot_feature_importances(
-                forests=[i.rf for i in regr.estimators_] + [model.rf],
-                names=dataset.names + ["joint prediction"],
-                colors=dataset.colors + ["C0"])
+        forests=[i.rf for i in regr.estimators_] + [model.rf],
+        names=dataset.names + ["joint prediction"],
+        colors=dataset.colors + ["C0"])
 
     fig.savefig(os.path.join(output_path, "feature_importances.pdf"),
                 bbox_inches='tight')
@@ -63,6 +63,7 @@ class RandomForest(object):
     """
     A class for a random forest.
     """
+
     def __init__(self, training_dataset, model_path, data_file):
         """
         Parameters
@@ -139,7 +140,8 @@ class RandomForest(object):
         -------
         preds : `~numpy.ndarray`
             ``N x M`` values where ``N`` is number of parameters, ``M`` is
-            number of samples/trees (check out attributes of model for metadata)
+            number of samples/trees (check out attributes of model for
+            metadata)
         """
         model_file = os.path.join(self.model_path, "model.pkl")
         # Loading random forest from '{}'...".format(model_file)
@@ -166,6 +168,7 @@ class RandomForest(object):
                         bbox_inches='tight')
         return posterior
 
+
 def data_ranges(posterior, percentiles=(50, 16, 84)):
     """
     Return posterior ranges.
@@ -181,8 +184,10 @@ def data_ranges(posterior, percentiles=(50, 16, 84)):
     """
     values = wpercentile(posterior.samples, posterior.weights,
                          percentiles, axis=0)
-    ranges = np.array([values[0], values[2]-values[0], values[0]-values[1]])
+    ranges = np.array(
+        [values[0], values[2] - values[0], values[0] - values[1]])
     return ranges.T
+
 
 def generate_example_data():
     """

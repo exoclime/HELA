@@ -1,5 +1,3 @@
-from collections import namedtuple
-
 import numpy as np
 
 from sklearn import ensemble
@@ -114,7 +112,7 @@ class Model(object):
         return {"num_trees": self.num_trees, "num_jobs": self.num_jobs,
                 "names": self.names, "ranges": self.ranges,
                 "colors": self.colors, "verbose": self.verbose,
-                "enable_posterior": self.enable_posterior,}
+                "enable_posterior": self.enable_posterior}
 
     def trees_predict(self, x):
 
@@ -132,19 +130,22 @@ class Model(object):
 
         if not self.enable_posterior:
             raise ValueError("Cannot compute posteriors with this model. "
-                             "Set `enable_posterior` to True to enable posterior computation.")
+                             "Set `enable_posterior` to True to enable "
+                             "posterior computation.")
 
         # Find the leaves for the query points
         leaves_x = self.rf.apply(x)
 
         if len(x) > self.num_trees:
-            # If there are many queries, it is faster to find points using a cache
+            # If there are many queries, it is faster to find points
+            # using a cache
             return _posterior_percentile_cache(
                 self.data_leaves, self.data_weights,
                 self.data_y, leaves_x, percentile
             )
         else:
-            # For few queries, it is faster if we just compute the posterior for each element
+            # For few queries, it is faster if we just compute the posterior
+            # for each element
             return _posterior_percentile_nocache(
                 self.data_leaves, self.data_weights,
                 self.data_y, leaves_x, percentile
@@ -154,7 +155,8 @@ class Model(object):
         leaves_x = self.rf.apply(x[None, :])[0]
         if not self.enable_posterior:
             raise ValueError("Cannot compute posteriors with this model. "
-                             "Set `enable_posterior` to True to enable posterior computation.")
+                             "Set `enable_posterior` to True to enable "
+                             "posterior computation.")
 
         return _posterior(
             self.data_leaves, self.data_weights,
@@ -207,8 +209,8 @@ def _posterior_percentile_nocache(data_leaves, data_weights, data_y,
     return np.array(values)
 
 
-def _posterior_percentile_cache(data_leaves, data_weights, data_y, query_leaves,
-                                percentile):
+def _posterior_percentile_cache(data_leaves, data_weights, data_y,
+                                query_leaves, percentile):
     # Build a dictionary for fast access of the contents of the leaves.
     # Building cache...
     cache = [

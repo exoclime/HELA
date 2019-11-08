@@ -195,7 +195,8 @@ def plot_posterior_matrix(posterior, names, ranges, colors, soft_colors=None):
                    width=bins[1] - bins[0])
 
             kd_probs = histogram
-            expected = wmedian(posterior.samples[:, dims[0]], posterior.weights)
+            expected = wmedian(posterior.samples[:, dims[0]],
+                               posterior.weights)
             ax.plot([expected, expected], [0, 1.1 * kd_probs.max()], '-',
                     linewidth=1, color='#222222')
 
@@ -245,7 +246,8 @@ def _plot_histogram2d(ax, posterior, color, cmap, dims, ranges):
 
 
 def _plot_samples(ax, posterior, color, dims, ranges):
-    # For efficiency, do not plot all the samples of the posterior. Subsample first.
+    # For efficiency, do not plot all the samples of the posterior.
+    # Subsample first.
     if len(posterior.samples) > POSTERIOR_MAX_SIZE:
         posterior = resample_posterior(posterior, POSTERIOR_MAX_SIZE)
 

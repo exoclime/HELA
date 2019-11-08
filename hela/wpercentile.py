@@ -4,7 +4,6 @@ __all__ = ["wpercentile", "wmedian"]
 
 
 def _wpercentile1d(data, weights, percentiles):
-
     if data.ndim > 1 or weights.ndim > 1:
         raise ValueError("data and weights must be one-dimensional arrays")
 
@@ -22,7 +21,7 @@ def _wpercentile1d(data, weights, percentiles):
     cumsum_weights = np.cumsum(sorted_weights)
     sum_weights = cumsum_weights[-1]
 
-    pn = 100 * (cumsum_weights - 0.5*sorted_weights) / sum_weights
+    pn = 100 * (cumsum_weights - 0.5 * sorted_weights) / sum_weights
 
     return np.interp(percentiles, pn, sorted_data)
 
