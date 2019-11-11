@@ -39,27 +39,27 @@ We also generated a bunch of samples with a known slope and intercept, called
 the slope and intercept.
 
 Once we have these three data structures written and their paths saved, we can
-run ``hela`` on the data. First, we'll initialize a `~hela.Model` object
+run ``hela`` on the data. First, we'll initialize a `~hela.Retrieval` object
 with the paths to the three files/directories that it needs to know about:
 
 .. code-block:: python
 
-    from hela import Model
+    from hela import Retrieval
     import matplotlib.pyplot as plt
 
     # Initialize a retrieval model object:
-    m = Model(training_dataset, example_dir, samples_path)
+    r = Retrieval(training_dataset, example_dir, samples_path)
 
-We now have a random forest object ``m`` which is ready for training. We can
+We now have a Retrieval object ``r`` which is ready for training. We can
 train the random forest with 1000 trees and on a single processor:
 
 .. code-block:: python
 
     # Train the random forest:
-    r2scores = m.train(num_trees=1000, num_jobs=1)
+    r2scores = r.train(num_trees=1000, num_jobs=1)
 
     # Plot the results:
-    m.plot_correlations()
+    r.plot_correlations()
     plt.show()
 
 .. plot::
@@ -68,34 +68,34 @@ train the random forest with 1000 trees and on a single processor:
     # Generate an example dataset directory
     example_dir, training_dataset, samples_path = generate_example_data()
 
-    from hela import Model
+    from hela import Retrieval
     import matplotlib.pyplot as plt
 
     # Initialize a random forest object:
-    m = Model(training_dataset, example_dir, samples_path)
+    r = Retrieval(training_dataset, example_dir, samples_path)
 
     # Train the random forest:
-    r2scores = m.train(num_trees=1000, num_jobs=1)
-    m.plot_correlations()
+    r2scores = r.train(num_trees=1000, num_jobs=1)
+    r.plot_correlations()
     plt.show()
 
-The `~hela.Model.train` method returns a dictionary called ``r2scores``
+The `~hela.Retrieval.train` method returns a dictionary called ``r2scores``
 which contains the :math:`R^2` scores of the slope and intercept, which should
 both be close to unity for this example.
 
 Finally, let's estimate the posterior distributions for the slope and intercept
 using the trained random forest on the sample data in ``samples_path``, where
 the true values of the slope and intercept are :math:`m=0.2` and :math:`b=0.5`
-using the `~hela.Model.predict` method:
+using the `~hela.Retrieval.predict` method:
 
 .. code-block:: python
 
     # Predict posterior distributions from random forest
-    posterior = m.predict()
+    posterior = r.predict()
     posterior_slopes, posterior_intercepts = posterior.samples.T
 
     # Plot the posteriors
-    m.plot_posterior()
+    r.plot_posterior()
     plt.show()
 
 .. plot::
@@ -104,16 +104,16 @@ using the `~hela.Model.predict` method:
     # Generate an example dataset directory
     example_dir, training_dataset, samples_path = generate_example_data()
 
-    from hela import Model
+    from hela import Retrieval
     import matplotlib.pyplot as plt
 
     # Initialize a random forest object:
-    m = Model(training_dataset, example_dir, samples_path)
+    r = Retrieval(training_dataset, example_dir, samples_path)
 
     # Predict posterior distributions from random forest
-    posterior = m.predict()
+    posterior = r.predict()
     posterior_slopes, posterior_intercepts = posterior.samples.T
-    m.plot_posterior()
+    r.plot_posterior()
     plt.tight_layout()
     plt.show()
 

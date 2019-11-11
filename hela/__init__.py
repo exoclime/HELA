@@ -25,7 +25,7 @@ if sys.version_info < tuple(
 
 if not _ASTROPY_SETUP_:  # noqa
     # For egg_info test builds to pass, put package imports here.
-    from .model import *  # noqa
+    from .retrieval import *  # noqa
     from .wrapper import *  # noqa
     from .dataset import *  # noqa
     from .plot import *  # noqa

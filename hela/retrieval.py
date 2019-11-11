@@ -11,7 +11,7 @@ from .plot import (plot_predicted_vs_real, plot_feature_importances,
                    plot_posterior_matrix)
 from .wpercentile import wpercentile
 
-__all__ = ['Model', 'generate_example_data']
+__all__ = ['Retrieval', 'generate_example_data']
 
 
 def train_model(dataset, num_trees, num_jobs, verbose=1):
@@ -47,7 +47,7 @@ def compute_feature_importance(model, dataset):
     return np.array([forest_i.feature_importances_ for forest_i in forests])
 
 
-class Model(object):
+class Retrieval(object):
     """
     A class for a trainable random forest model.
     """
