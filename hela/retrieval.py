@@ -293,4 +293,4 @@ def generate_example_data():
 
     samples = true_slope * x + true_intercept
     np.save(samples_path, samples.T)
-    return example_dir, training_dataset, samples_path
+    return training_dataset, example_dir, samples_path

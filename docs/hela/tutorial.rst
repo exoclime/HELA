@@ -13,7 +13,7 @@ which we'd like to predict on:
 
     from hela import generate_example_data
     # Generate an example dataset directory
-    example_dir, training_dataset, samples_path = generate_example_data()
+    training_dataset, example_dir, samples_path = generate_example_data()
 
 This handy command created an example directory called ``linear_data``,
 which contains a training dataset described by the metadata file located at path
@@ -66,7 +66,7 @@ train the random forest with 1000 trees and on a single processor:
 
     from hela import generate_example_data
     # Generate an example dataset directory
-    example_dir, training_dataset, samples_path = generate_example_data()
+    training_dataset, example_dir, samples_path = generate_example_data()
 
     from hela import Retrieval
     import matplotlib.pyplot as plt
@@ -102,7 +102,7 @@ using the `~hela.Retrieval.predict` method:
 
     from hela import generate_example_data
     # Generate an example dataset directory
-    example_dir, training_dataset, samples_path = generate_example_data()
+    training_dataset, example_dir, samples_path = generate_example_data()
 
     from hela import Retrieval
     import matplotlib.pyplot as plt

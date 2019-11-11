@@ -2,7 +2,7 @@
 
 def test_linear_end_to_end():
     from ..retrieval import generate_example_data
-    example_dir, training_dataset, samples_path = generate_example_data()
+    training_dataset, example_dir, samples_path = generate_example_data()
 
     # Import RandomForest object from HELA
     from ..retrieval import Retrieval
