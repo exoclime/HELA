@@ -30,7 +30,7 @@ free parameters, which looks like this:
      "training_data": "training.npy",
      "testing_data": "testing.npy"}
 
-This file tells the model what the two fitting parameters are and their rainges,
+This file tells the model what the two fitting parameters are and their ranges,
 where to grab the training and testing datasets (in the npy pickle files), the
 number of features (1000), the colors to use for each parameter in the plots.
 
@@ -47,10 +47,10 @@ with the paths to the three files/directories that it needs to know about:
     from hela import Model
     import matplotlib.pyplot as plt
 
-    # Initialize a random forest object:
+    # Initialize a retrieval model object:
     m = Model(training_dataset, example_dir, samples_path)
 
-We now have a random forest object ``rf`` which is ready for training. We can
+We now have a random forest object ``m`` which is ready for training. We can
 train the random forest with 1000 trees and on a single processor:
 
 .. code-block:: python
@@ -79,7 +79,7 @@ train the random forest with 1000 trees and on a single processor:
     m.plot_correlations()
     plt.show()
 
-The `~hela.Model.train` method returns a dictionary called `r2scores`
+The `~hela.Model.train` method returns a dictionary called ``r2scores``
 which contains the :math:`R^2` scores of the slope and intercept, which should
 both be close to unity for this example.
 
