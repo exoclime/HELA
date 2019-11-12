@@ -6,12 +6,12 @@ from sklearn.utils import check_random_state
 
 from tqdm import tqdm
 
-__all__ = ['RandomForestWrapper', 'Posterior', 'resample_posterior']
+__all__ = ['PosteriorRandomForest', 'Posterior', 'resample_posterior']
 
 
-class RandomForestWrapper(object):
+class PosteriorRandomForest(object):
     """
-    Wrapper class for the scikit-learn RandomForestRegressor.
+    Produces posterior samples from a random forest.
     """
 
     def __init__(self, num_trees, num_jobs, names, ranges, colors,
@@ -151,7 +151,7 @@ class RandomForestWrapper(object):
                 self.data_y, leaves_x, percentile
             )
 
-    def posterior(self, x):
+    def predict_posterior(self, x):
         leaves_x = self.rf.apply(x[None, :])[0]
         if not self.enable_posterior:
             raise ValueError("Cannot compute posteriors with this model. "

@@ -6,7 +6,7 @@ from sklearn import metrics, multioutput
 import joblib
 
 from .dataset import load_dataset, load_data_file
-from .wrapper import RandomForestWrapper
+from .posteriors import PosteriorRandomForest
 from .plot import (plot_predicted_vs_real, plot_feature_importances,
                    plot_posterior_matrix)
 from .wpercentile import wpercentile
@@ -15,11 +15,11 @@ __all__ = ['Retrieval', 'generate_example_data']
 
 
 def train_model(dataset, num_trees, num_jobs, verbose=1):
-    pipeline = RandomForestWrapper(num_trees, num_jobs,
-                                   names=dataset.names,
-                                   ranges=dataset.ranges,
-                                   colors=dataset.colors,
-                                   verbose=verbose)
+    pipeline = PosteriorRandomForest(num_trees, num_jobs,
+                                     names=dataset.names,
+                                     ranges=dataset.ranges,
+                                     colors=dataset.colors,
+                                     verbose=verbose)
     pipeline.fit(dataset.training_x, dataset.training_y)
     return pipeline
 
@@ -71,7 +71,6 @@ class Retrieval(object):
         self.dataset = None
         self.model = None
         self._feature_importance = None
-        self._posterior = None
         self.oob = None
         self.pred = None
 
@@ -102,8 +101,7 @@ class Retrieval(object):
         # Saving model
         joblib.dump(self.model, model_file)
 
-        # Printing model information...
-        print("OOB score: {:.4f}".format(self.model.rf.oob_score_))
+        # saving model information...
         self.oob = self.model.rf.oob_score_
 
         pred, r2scores = test_model(self.model, self.dataset)
@@ -121,8 +119,6 @@ class Retrieval(object):
         fig, axes = plot_predicted_vs_real(self.dataset.testing_y, self.pred,
                                            self.dataset.names,
                                            self.dataset.ranges)
-        fig.savefig(os.path.join(self.output_path, "predicted_vs_real.pdf"),
-                    bbox_inches='tight')
         return fig, axes
 
     def feature_importance(self):
@@ -152,9 +148,6 @@ class Retrieval(object):
                                                     ["joint prediction"]),
                                              colors=(self.dataset.colors +
                                                      ["C0"]))
-
-        fig.savefig(os.path.join(self.output_path, "feature_importances.pdf"),
-                    bbox_inches='tight')
         return fig, axes
 
     def predict(self, quiet=False):
@@ -172,25 +165,22 @@ class Retrieval(object):
             number of samples/trees (check out attributes of model for
             metadata)
         """
-        if self._posterior is None:
-            model_file = os.path.join(self.model_path, "model.pkl")
-            # Loading random forest from '{}'...".format(model_file)
-            model = joblib.load(model_file)
+        model_file = os.path.join(self.model_path, "model.pkl")
+        # Loading random forest from '{}'...".format(model_file)
+        model = joblib.load(model_file)
 
-            # Loading data from '{}'...".format(data_file)
-            data, _ = load_data_file(self.data_file, model.rf.n_features_)
+        # Loading data from '{}'...".format(data_file)
+        data, _ = load_data_file(self.data_file, model.rf.n_features_)
 
-            posterior = model.posterior(data[0])
+        posterior = model.predict_posterior(data[0])
 
-            if not quiet:
-                posterior_ranges = data_ranges(posterior)
-                for name_i, pred_range_i in zip(model.names, posterior_ranges):
-                    print("Prediction for {}: {:.3g} "
-                          "[+{:.3g} -{:.3g}]".format(name_i, *pred_range_i))
+        if not quiet:
+            posterior_ranges = data_ranges(posterior)
+            for name_i, pred_range_i in zip(model.names, posterior_ranges):
+                print("Prediction for {}: {:.3g} "
+                      "[+{:.3g} -{:.3g}]".format(name_i, *pred_range_i))
 
-            self._posterior = posterior
-
-        return self._posterior
+        return posterior
 
     def plot_posterior(self):
         """
@@ -209,8 +199,6 @@ class Retrieval(object):
                                           ranges=model.ranges,
                                           colors=model.colors)
         os.makedirs(self.output_path, exist_ok=True)
-        fig.savefig(os.path.join(self.output_path, "posterior_matrix.pdf"),
-                    bbox_inches='tight')
         return fig, axes
 
 
