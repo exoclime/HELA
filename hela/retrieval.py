@@ -5,7 +5,7 @@ import numpy as np
 from sklearn import metrics, multioutput
 import joblib
 
-from .dataset import load_dataset, load_data_file
+from .dataset import load_dataset
 from .posteriors import PosteriorRandomForest
 from .plot import (plot_predicted_vs_real, plot_feature_importances,
                    plot_posterior_matrix)
@@ -52,7 +52,7 @@ class Retrieval(object):
     A class for a trainable random forest model.
     """
 
-    def __init__(self, training_dataset, model_path, data_file):
+    def __init__(self, training_dataset, model_path):
         """
         Parameters
         ----------
@@ -60,12 +60,9 @@ class Retrieval(object):
             Path to the dataset metadata JSON file
         model_path : str
             Path to the output directory to create and populate
-        data_file : str
-            Path to the numpy pickle of the samples to predict on
         """
         self.training_dataset = training_dataset
         self.model_path = model_path
-        self.data_file = data_file
         self.output_path = self.model_path
 
         self.dataset = None
@@ -150,12 +147,14 @@ class Retrieval(object):
                                                      ["C0"]))
         return fig, axes
 
-    def predict(self, quiet=False):
+    def predict(self, x, quiet=False):
         """
         Predict values from the trained random forest.
 
         Parameters
         ----------
+        x : `~numpy.ndarray`
+
         plot_posterior : bool
 
         Returns
@@ -169,10 +168,7 @@ class Retrieval(object):
         # Loading random forest from '{}'...".format(model_file)
         model = joblib.load(model_file)
 
-        # Loading data from '{}'...".format(data_file)
-        data, _ = load_data_file(self.data_file, model.rf.n_features_)
-
-        posterior = model.predict_posterior(data[0])
+        posterior = model.predict_posterior(x)
 
         if not quiet:
             posterior_ranges = data_ranges(posterior)
@@ -182,7 +178,7 @@ class Retrieval(object):
 
         return posterior
 
-    def plot_posterior(self):
+    def plot_posterior(self, posterior):
         """
         Plot the posterior distributions for each parameter.
 
@@ -194,11 +190,10 @@ class Retrieval(object):
         # Loading random forest from '{}'...".format(model_file)
         model = joblib.load(model_file)
 
-        fig, axes = plot_posterior_matrix(self._posterior,
+        fig, axes = plot_posterior_matrix(posterior,
                                           names=model.names,
                                           ranges=model.ranges,
                                           colors=model.colors)
-        os.makedirs(self.output_path, exist_ok=True)
         return fig, axes
 
 
@@ -232,12 +227,10 @@ def generate_example_data():
         Path to the directory of the example data
     training_dataset : str
         Path to the dataset metadata JSON file
-    samples_path : str
-        Path to the numpy pickle of the samples to predict on
+    samples : `~numpy.ndarray`
     """
     example_dir = 'linear_dataset'
     training_dataset = os.path.join(example_dir, 'example_dataset.json')
-    samples_path = 'samples.npy'
 
     os.makedirs(example_dir, exist_ok=True)
 
@@ -280,5 +273,4 @@ def generate_example_data():
     true_intercept = 0.5
 
     samples = true_slope * x + true_intercept
-    np.save(samples_path, samples.T)
-    return training_dataset, example_dir, samples_path
+    return training_dataset, example_dir, samples.T[0]

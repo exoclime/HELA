@@ -13,7 +13,7 @@ which we'd like to predict on:
 
     from hela import generate_example_data
     # Generate an example dataset directory
-    training_dataset, example_dir, samples_path = generate_example_data()
+    training_dataset, example_dir, data = generate_example_data()
 
 This handy command created an example directory called ``linear_data``,
 which contains a training dataset described by the metadata file located at path
@@ -48,7 +48,7 @@ with the paths to the three files/directories that it needs to know about:
     import matplotlib.pyplot as plt
 
     # Initialize a retrieval model object:
-    r = Retrieval(training_dataset, example_dir, samples_path)
+    r = Retrieval(training_dataset, example_dir)
 
 We now have a Retrieval object ``r`` which is ready for training. We can
 train the random forest with 1000 trees and on a single processor:
@@ -66,13 +66,13 @@ train the random forest with 1000 trees and on a single processor:
 
     from hela import generate_example_data
     # Generate an example dataset directory
-    training_dataset, example_dir, samples_path = generate_example_data()
+    training_dataset, example_dir, data = generate_example_data()
 
     from hela import Retrieval
     import matplotlib.pyplot as plt
 
     # Initialize a random forest object:
-    r = Retrieval(training_dataset, example_dir, samples_path)
+    r = Retrieval(training_dataset, example_dir)
 
     # Train the random forest:
     r2scores = r.train(num_trees=1000, num_jobs=1)
@@ -84,36 +84,36 @@ which contains the :math:`R^2` scores of the slope and intercept, which should
 both be close to unity for this example.
 
 Finally, let's estimate the posterior distributions for the slope and intercept
-using the trained random forest on the sample data in ``samples_path``, where
+using the trained random forest on the sample data in ``data``, where
 the true values of the slope and intercept are :math:`m=0.2` and :math:`b=0.5`
 using the `~hela.Retrieval.predict` method:
 
 .. code-block:: python
 
     # Predict posterior distributions from random forest
-    posterior = r.predict()
+    posterior = r.predict(data)
     posterior_slopes, posterior_intercepts = posterior.samples.T
 
     # Plot the posteriors
-    r.plot_posterior()
+    r.plot_posterior(posterior)
     plt.show()
 
 .. plot::
 
     from hela import generate_example_data
     # Generate an example dataset directory
-    training_dataset, example_dir, samples_path = generate_example_data()
+    training_dataset, example_dir, data = generate_example_data()
 
     from hela import Retrieval
     import matplotlib.pyplot as plt
 
     # Initialize a random forest object:
-    r = Retrieval(training_dataset, example_dir, samples_path)
+    r = Retrieval(training_dataset, example_dir)
 
     # Predict posterior distributions from random forest
-    posterior = r.predict()
+    posterior = r.predict(data)
     posterior_slopes, posterior_intercepts = posterior.samples.T
-    r.plot_posterior()
+    r.plot_posterior(posterior)
     plt.tight_layout()
     plt.show()
 
