@@ -2,13 +2,13 @@
 
 def test_linear_end_to_end():
     from ..retrieval import generate_example_data
-    training_dataset, example_dir, samples_path = generate_example_data()
+    training_dataset, example_dir, data = generate_example_data()
 
     # Import RandomForest object from HELA
     from ..retrieval import Retrieval
 
     # Initialize a model:
-    r = Retrieval(training_dataset, example_dir, samples_path)
+    r = Retrieval(training_dataset, example_dir)
 
     # Train the random forest:
     r2scores = r.train(num_trees=1000, num_jobs=1)
@@ -18,7 +18,7 @@ def test_linear_end_to_end():
     assert abs(r2scores['intercept'] - 1) < 0.01
 
     # Predict posterior distributions from random forest
-    posterior = r.predict()
+    posterior = r.predict(data)
     posterior_slopes, posterior_intercepts = posterior.samples.T
 
     # Do a very generous check that the posterior distributions match
