@@ -108,7 +108,7 @@ class PosteriorRandomForest(object):
         pred = self.rf.predict(x)
         return self._scaler_inverse_transform(pred)
 
-    def get_params(self, deep=True):
+    def get_params(self):
         return {"num_trees": self.num_trees, "num_jobs": self.num_jobs,
                 "names": self.names, "ranges": self.ranges,
                 "colors": self.colors, "verbose": self.verbose,

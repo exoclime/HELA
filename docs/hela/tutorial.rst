@@ -110,6 +110,8 @@ using the `~hela.Retrieval.predict` method:
     # Initialize a random forest object:
     r = Retrieval(training_dataset, example_dir)
 
+    r2scores = r.train(num_trees=1000, num_jobs=1)
+
     # Predict posterior distributions from random forest
     posterior = r.predict(data)
     posterior_slopes, posterior_intercepts = posterior.samples.T
