@@ -197,7 +197,6 @@ class Posterior(object):
             print("Prediction for {}: {:.3g} "
                   "[+{:.3g} -{:.3g}]".format(name_i, *pred_range_i))
 
-
     def data_ranges(self, percentiles=(50, 16, 84)):
         """
         Return posterior ranges.
@@ -220,6 +219,7 @@ class Posterior(object):
     def plot_posterior_matrix(self, dataset):
         from .plot import plot_posterior_matrix
         return plot_posterior_matrix(self, dataset)
+
 
 def _posterior(data_leaves, data_weights, data_y, query_leaves):
     weights_x = (query_leaves[:, None] == data_leaves) * data_weights

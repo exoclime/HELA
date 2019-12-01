@@ -57,7 +57,8 @@ class Dataset(object):
         # Optionally, load testing data
         testing_x, testing_y = None, None
         if dataset_info["testing_data"] is not None:
-            testing_file = os.path.join(base_path, dataset_info["testing_data"])
+            testing_file = os.path.join(base_path,
+                                        dataset_info["testing_data"])
             # Loading testing data from '{}'...".format(testing_file)
             testing_x, testing_y = load_data_file(testing_file,
                                                   metadata["num_features"])
