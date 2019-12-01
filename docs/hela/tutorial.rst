@@ -44,11 +44,11 @@ with the paths to the three files/directories that it needs to know about:
 
 .. code-block:: python
 
-    from hela import Retrieval
+    from hela import Retrieval, Dataset
     import matplotlib.pyplot as plt
 
     # Initialize a retrieval model object:
-    r = Retrieval(training_dataset, example_dir)
+    r = Retrieval()
 
 We now have a Retrieval object ``r`` which is ready for training. We can
 train the random forest with 1000 trees and on a single processor:
@@ -58,25 +58,26 @@ train the random forest with 1000 trees and on a single processor:
     # Train the random forest:
     r2scores = r.train(num_trees=1000, num_jobs=1)
 
-    # Plot the results:
-    r.plot_correlations()
-    plt.show()
+    # Plot predicted vs real:
+    fig, ax = r.plot_predicted_vs_real(dataset)
 
 .. plot::
 
-    from hela import generate_example_data
-    # Generate an example dataset directory
-    training_dataset, example_dir, data = generate_example_data()
-
-    from hela import Retrieval
     import matplotlib.pyplot as plt
+    from hela import Retrieval, Dataset, generate_example_data
 
-    # Initialize a random forest object:
-    r = Retrieval(training_dataset, example_dir)
+    # Create an example dataset
+    training_dataset, example_dir, example_data = generate_example_data()
 
-    # Train the random forest:
-    r2scores = r.train(num_trees=1000, num_jobs=1)
-    r.plot_correlations()
+    # Load the dataset
+    dataset = Dataset.load_json("linear_dataset/example_dataset.json")
+
+    # Train the model
+    r = Retrieval()
+    r2scores = r.train(dataset, num_trees=1000, num_jobs=5)
+
+    # Plot predicted vs real:
+    fig, ax = r.plot_predicted_vs_real(dataset)
     plt.show()
 
 The `~hela.Retrieval.train` method returns a dictionary called ``r2scores``
@@ -85,37 +86,36 @@ both be close to unity for this example.
 
 Finally, let's estimate the posterior distributions for the slope and intercept
 using the trained random forest on the sample data in ``data``, where
-the true values of the slope and intercept are :math:`m=0.2` and :math:`b=0.5`
+the true values of the slope and intercept are :math:`m=0.7` and :math:`b=0.5`
 using the `~hela.Retrieval.predict` method:
 
 .. code-block:: python
 
-    # Predict posterior distributions from random forest
-    posterior = r.predict(data)
-    posterior_slopes, posterior_intercepts = posterior.samples.T
+    # Predict posterior distribution for slope and intercept of example data
+    posterior = r.predict(example_data)
 
-    # Plot the posteriors
-    r.plot_posterior(posterior)
-    plt.show()
+    # Plot posterior distribution matrix
+    fig2, ax2 = posterior.plot_posterior_matrix(dataset)
 
 .. plot::
 
-    from hela import generate_example_data
-    # Generate an example dataset directory
-    training_dataset, example_dir, data = generate_example_data()
-
-    from hela import Retrieval
     import matplotlib.pyplot as plt
+    from hela import Retrieval, Dataset, generate_example_data
 
-    # Initialize a random forest object:
-    r = Retrieval(training_dataset, example_dir)
+    # Create an example dataset
+    training_dataset, example_dir, example_data = generate_example_data()
 
-    r2scores = r.train(num_trees=1000, num_jobs=1)
+    # Load the dataset
+    dataset = Dataset.load_json("linear_dataset/example_dataset.json")
 
-    # Predict posterior distributions from random forest
-    posterior = r.predict(data)
-    posterior_slopes, posterior_intercepts = posterior.samples.T
-    r.plot_posterior(posterior)
-    plt.tight_layout()
+    # Train the model
+    r = Retrieval()
+    r2scores = r.train(dataset, num_trees=1000, num_jobs=5)
+
+    # Predict posterior distribution for slope and intercept of example data
+    posterior = r.predict(example_data)
+
+    # Plot posterior distribution matrix
+    fig2, ax2 = posterior.plot_posterior_matrix(dataset)
+
     plt.show()
-

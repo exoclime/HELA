@@ -6,6 +6,8 @@ from sklearn.utils import check_random_state
 
 from tqdm import tqdm
 
+from .wpercentile import wpercentile
+
 __all__ = ['PosteriorRandomForest', 'Posterior', 'resample_posterior']
 
 
@@ -13,7 +15,6 @@ class PosteriorRandomForest(object):
     """
     Produces posterior samples from a random forest.
     """
-
     def __init__(self, num_trees, num_jobs, names, ranges, colors,
                  verbose=1, enable_posterior=True):
         """
@@ -179,6 +180,46 @@ class Posterior(object):
         self.samples = samples
         self.weights = weights
 
+    def print_percentiles(self, names):
+        """
+        Print the median and the +/- 1 sigma posterior values.
+
+        Parameters
+        ----------
+        names
+
+        Returns
+        -------
+
+        """
+        posterior_ranges = self.data_ranges()
+        for name_i, pred_range_i in zip(names, posterior_ranges):
+            print("Prediction for {}: {:.3g} "
+                  "[+{:.3g} -{:.3g}]".format(name_i, *pred_range_i))
+
+
+    def data_ranges(self, percentiles=(50, 16, 84)):
+        """
+        Return posterior ranges.
+
+        Parameters
+        ----------
+        posterior : `~numpy.ndarray`
+        percentiles : tuple
+
+        Returns
+        -------
+        ranges : `~numpy.ndarray`
+        """
+        values = wpercentile(self.samples, self.weights,
+                             percentiles, axis=0)
+        ranges = np.array(
+            [values[0], values[2] - values[0], values[0] - values[1]])
+        return ranges.T
+
+    def plot_posterior_matrix(self, dataset):
+        from .plot import plot_posterior_matrix
+        return plot_posterior_matrix(self, dataset)
 
 def _posterior(data_leaves, data_weights, data_y, query_leaves):
     weights_x = (query_leaves[:, None] == data_leaves) * data_weights

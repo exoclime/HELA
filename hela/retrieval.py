@@ -5,13 +5,18 @@ import numpy as np
 from sklearn import metrics, multioutput
 import joblib
 
-from .dataset import load_dataset
 from .posteriors import PosteriorRandomForest
-from .plot import (plot_predicted_vs_real, plot_feature_importances,
-                   plot_posterior_matrix)
-from .wpercentile import wpercentile
+from .plot import plot_predicted_vs_real, plot_feature_importances
 
-__all__ = ['Retrieval', 'generate_example_data']
+__all__ = ['Retrieval', 'generate_example_data', 'save_model', 'load_model']
+
+
+def save_model(path, model, **kwargs):
+    joblib.dump(model, path, **kwargs)
+
+
+def load_model(path, **kwargs):
+    joblib.load(path, **kwargs)
 
 
 def train_model(dataset, num_trees, num_jobs, verbose=1):
@@ -52,31 +57,19 @@ class Retrieval(object):
     A class for a trainable random forest model.
     """
 
-    def __init__(self, training_dataset, model_path):
-        """
-        Parameters
-        ----------
-        training_dataset : str
-            Path to the dataset metadata JSON file
-        model_path : str
-            Path to the output directory to create and populate
-        """
-        self.training_dataset = training_dataset
-        self.model_path = model_path
-        self.output_path = self.model_path
-
-        self.dataset = None
+    def __init__(self):
         self.model = None
         self._feature_importance = None
         self.oob = None
         self.pred = None
 
-    def train(self, num_trees=1000, num_jobs=5, quiet=False):
+    def train(self, dataset, num_trees=1000, num_jobs=5, quiet=False):
         """
         Train the random forest on a set of observations.
 
         Parameters
         ----------
+        dataset : `~hela.Dataset`
         num_trees : int
         num_jobs : int
         quiet : bool
@@ -86,26 +79,17 @@ class Retrieval(object):
         r2scores : dict
             :math:`R^2` values for each parameter after training
         """
-        # Loading dataset
-        self.dataset = load_dataset(self.training_dataset)
-
         # Training model
-        self.model = train_model(self.dataset, num_trees, num_jobs, not quiet)
-
-        os.makedirs(self.model_path, exist_ok=True)
-        model_file = os.path.join(self.model_path, "model.pkl")
-
-        # Saving model
-        joblib.dump(self.model, model_file)
+        self.model = train_model(dataset, num_trees, num_jobs, not quiet)
 
         # saving model information...
         self.oob = self.model.rf.oob_score_
 
-        pred, r2scores = test_model(self.model, self.dataset)
+        pred, r2scores = test_model(self.model, dataset)
         self.pred = pred
         return r2scores
 
-    def plot_correlations(self):
+    def plot_predicted_vs_real(self, dataset):
         """
         Plot training correlations.
 
@@ -113,14 +97,16 @@ class Retrieval(object):
         -------
         fig, axes
         """
-        fig, axes = plot_predicted_vs_real(self.dataset.testing_y, self.pred,
-                                           self.dataset.names,
-                                           self.dataset.ranges)
+        fig, axes = plot_predicted_vs_real(dataset, self)
         return fig, axes
 
-    def feature_importance(self):
+    def feature_importance(self, dataset):
         """
         Compute feature importance.
+
+        Parameters
+        ----------
+        dataset : `~hela.Dataset`
 
         Returns
         -------
@@ -128,12 +114,16 @@ class Retrieval(object):
         """
         if self._feature_importance is None:
             self._feature_importance = compute_feature_importance(self.model,
-                                                                  self.dataset)
+                                                                  dataset)
         return self._feature_importance
 
-    def plot_feature_importance(self):
+    def plot_feature_importance(self, dataset):
         """
         Plot the feature importances.
+
+        Parameters
+        ----------
+        dataset : `~hela.Dataset`
 
         Returns
         -------
@@ -141,21 +131,19 @@ class Retrieval(object):
         """
         forests = self.feature_importance()
         fig, axes = plot_feature_importances(forests=forests,
-                                             names=(self.dataset.names +
+                                             names=(dataset.names +
                                                     ["joint prediction"]),
-                                             colors=(self.dataset.colors +
+                                             colors=(dataset.colors +
                                                      ["C0"]))
         return fig, axes
 
-    def predict(self, x, quiet=False):
+    def predict(self, x):
         """
         Predict values from the trained random forest.
 
         Parameters
         ----------
         x : `~numpy.ndarray`
-
-        plot_posterior : bool
 
         Returns
         -------
@@ -164,57 +152,9 @@ class Retrieval(object):
             number of samples/trees (check out attributes of model for
             metadata)
         """
-        model_file = os.path.join(self.model_path, "model.pkl")
-        # Loading random forest from '{}'...".format(model_file)
-        model = joblib.load(model_file)
-
-        posterior = model.predict_posterior(x)
-
-        if not quiet:
-            posterior_ranges = data_ranges(posterior)
-            for name_i, pred_range_i in zip(model.names, posterior_ranges):
-                print("Prediction for {}: {:.3g} "
-                      "[+{:.3g} -{:.3g}]".format(name_i, *pred_range_i))
+        posterior = self.model.predict_posterior(x)
 
         return posterior
-
-    def plot_posterior(self, posterior):
-        """
-        Plot the posterior distributions for each parameter.
-
-        Returns
-        -------
-        fig, axes
-        """
-        model_file = os.path.join(self.model_path, "model.pkl")
-        # Loading random forest from '{}'...".format(model_file)
-        model = joblib.load(model_file)
-
-        fig, axes = plot_posterior_matrix(posterior,
-                                          names=model.names,
-                                          ranges=model.ranges,
-                                          colors=model.colors)
-        return fig, axes
-
-
-def data_ranges(posterior, percentiles=(50, 16, 84)):
-    """
-    Return posterior ranges.
-
-    Parameters
-    ----------
-    posterior : `~numpy.ndarray`
-    percentiles : tuple
-
-    Returns
-    -------
-    ranges : `~numpy.ndarray`
-    """
-    values = wpercentile(posterior.samples, posterior.weights,
-                         percentiles, axis=0)
-    ranges = np.array(
-        [values[0], values[2] - values[0], values[0] - values[1]])
-    return ranges.T
 
 
 def generate_example_data():
@@ -252,24 +192,32 @@ def generate_example_data():
     # Generate fake training data
     npoints = 1000
 
-    slopes = np.random.rand(npoints)
-    ints = np.random.rand(npoints)
-    x = np.linspace(0, 1, 1000)[:, np.newaxis]
-    data = slopes * x + ints
+    slopes = np.random.uniform(size=npoints)
+    ints = np.random.uniform(size=npoints)
+    x = np.linspace(0, 1, 1000)[:, None]
+
+    # Add correlated noise to parameters to introduce degeneracies
+    noise_ints = np.random.normal(scale=0.15, size=npoints)
+    noise_slopes = (np.abs(noise_ints) +
+                    np.random.normal(scale=0.02, size=npoints))
+
+    # Add also noise to data points (not strictly necessary)
+    data = ((slopes + noise_slopes) * x + (ints + noise_ints) +
+            np.random.normal(scale=0.01, size=(1000, npoints)))
 
     labels = np.vstack([slopes, ints])
     X = np.vstack([data, labels])
 
     # Split dataset into training and testing segments
     training = X[:, :int(0.8 * npoints)].T
-    testing = X[:, int(-0.2 * npoints):].T
+    testing = X[:, int(0.8 * npoints):].T
 
     np.save(os.path.join(example_dir, 'training.npy'), training)
     np.save(os.path.join(example_dir, 'testing.npy'), testing)
 
     # Generate a bunch of samples with a test value to "retrieve" with the
     # random forest:
-    true_slope = 0.2
+    true_slope = 0.7
     true_intercept = 0.5
 
     samples = true_slope * x + true_intercept

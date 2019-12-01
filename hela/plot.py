@@ -18,7 +18,7 @@ __all__ = ['plot_predicted_vs_real', 'plot_feature_importances',
 POSTERIOR_MAX_SIZE = 10000
 
 
-def plot_predicted_vs_real(y_real, y_pred, names, ranges, alpha='auto'):
+def plot_predicted_vs_real(dataset, retrieval, alpha='auto'):
     """
     Plot predicted and real parameter values.
 
@@ -34,6 +34,10 @@ def plot_predicted_vs_real(y_real, y_pred, names, ranges, alpha='auto'):
     -------
 
     """
+
+    y_real, y_pred, names, ranges = (dataset.testing_y, retrieval.pred,
+                                     dataset.names, dataset.ranges)
+
     num_plots = y_pred.shape[1]
     num_plot_rows = int(np.sqrt(num_plots))
     num_plot_cols = (num_plots - 1) // num_plot_rows + 1
@@ -109,7 +113,7 @@ def plot_feature_importances(forests, names, colors):
     return fig, axes
 
 
-def plot_posterior_matrix(posterior, names, ranges, colors, soft_colors=None):
+def plot_posterior_matrix(posterior, dataset, soft_colors=None):
     """
     Plot the posterior matrix.
 
@@ -125,6 +129,9 @@ def plot_posterior_matrix(posterior, names, ranges, colors, soft_colors=None):
     -------
 
     """
+
+    names, ranges, colors = dataset.names, dataset.ranges, dataset.colors
+
     cmaps = [LinearSegmentedColormap.from_list("MyReds", [(1, 1, 1), c], N=256)
              for c in colors]
 
@@ -202,10 +209,7 @@ def plot_posterior_matrix(posterior, names, ranges, colors, soft_colors=None):
 
             ax.axis([ranges[dims[0]][0], ranges[dims[0]][1],
                      0, 1.1 * kd_probs.max()])
-
-    # fig.tight_layout(pad=0)
-
-    # fig.tight_layout(pad=0)
+    fig.tight_layout()
     return fig, axes
 
 
