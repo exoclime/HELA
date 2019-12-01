@@ -1,4 +1,4 @@
-# HELA       <img src="img/HELA_logo1.png" alt="drawing" align="right" width="200"/>
+# HELA       <img src="../img/HELA_logo1.png" alt="drawing" align="right" width="200"/>
 
 A Random Forest retrieval algorithm, here used to perform atmospheric retrieval on exoplanet atmospheres.
 
@@ -12,9 +12,10 @@ The set-up here is simply a Random Forest algorithm, for use on a training set p
 
 HELA is developed for use with Python 3 and requires the following packages:
 - numpy
-- sklearn
 - matplotlib
-
+- sklearn
+- tqdm
+- joblib
 
 ## Running HELA
 
@@ -31,7 +32,7 @@ python3 rfretrieval.py train -h
 This will show you the usage of 'train', in case you need a reminder. So, we run training as follows:
 
 ```
-python3 rfretrieval.py train example_dataset/example_dataset.json example_model/
+python3 rfretrieval.py train ../example_dataset/example_dataset.json ../example_model/
 ```
 
 The ```training_dataset``` refers to the ```.json``` file in the dataset folder. The ```training.npy``` and ```testing.npy``` files must also be in this folder. The ```model_path``` is just some new output path you need to choose a name for. It will be created. 
@@ -39,7 +40,7 @@ The ```training_dataset``` refers to the ```.json``` file in the dataset folder.
 You can also edit the number of trees used, and the number of jobs, and find the feature importances, by running with the extra optional arguments:
 
 ```
-python3 rfretrieval.py train example_dataset/example_dataset.json example_model/ --num-trees 100 --num-jobs 3 --feature-importance
+python3 rfretrieval.py train ../example_dataset/example_dataset.json ../example_model/ --num-trees 100 --num-jobs 3 --feature-importance
 ```
 
 The default number of trees is 1000. The default number of jobs is 5. The default does not run the feature importance. This is because it requires training a new forest for each parameter, so makes the process much slower, and you may not need the feature importance every time you use HELA. 
@@ -63,7 +64,7 @@ python3 rfretreival.py predict -h
 For this stage, you must provide the model's path, the data file, and an output folder. Whether the posteriors are plotted or not is optional. So, to include the posteriors, we run:
 
 ```
-python3 rfretrieval.py predict example_model/ example_dataset/WASP12b.npy example_plots/ --plot-posterior
+python3 rfretrieval.py predict ../example_model/ ../example_dataset/WASP12b.npy ../example_plots/ --plot-posterior
 ```
 
 This will give you a prediction for each parameter on this data file. The numbers given are the median, and in brackets the 16th and 84th percentiles, of the posteriors. The posterior matrix can now be found in the ```example_plots/``` folder. 
