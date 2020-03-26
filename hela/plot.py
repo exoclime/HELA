@@ -9,9 +9,9 @@ from matplotlib.colors import LinearSegmentedColormap
 from sklearn import metrics, neighbors
 from sklearn.preprocessing import MinMaxScaler
 
-from models import resample_posterior
-from wpercentile import wmedian
-from utils import tqdm
+from .models import resample_posterior
+from .wpercentile import wmedian
+from .utils import tqdm
 
 __all__ = [
     'predicted_vs_real',

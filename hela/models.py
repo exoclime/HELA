@@ -8,7 +8,7 @@ from sklearn import ensemble
 from sklearn.utils import check_random_state
 from sklearn.preprocessing import MinMaxScaler
 
-from utils import tqdm
+from .utils import tqdm
 
 __all__ = [
     "Model",

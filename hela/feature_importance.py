@@ -9,8 +9,8 @@ import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
 
-from models import _tree_weights
-from utils import tqdm
+from .models import _tree_weights
+from .utils import tqdm
 
 __all__ = [
     'importances_per_output'
