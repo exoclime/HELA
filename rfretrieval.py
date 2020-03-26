@@ -106,7 +106,7 @@ def main_train(training_dataset, model_path,
                quiet,
                **_):
 
-    LOGGER.info("Loading dataset '{}'...".format(training_dataset))
+    LOGGER.info("Loading dataset '%s'...", training_dataset)
     dataset = hela.load_dataset(training_dataset)
 
     LOGGER.info("Training model...")
@@ -114,7 +114,7 @@ def main_train(training_dataset, model_path,
 
     os.makedirs(model_path, exist_ok=True)
     model_file = os.path.join(model_path, "model.pkl")
-    LOGGER.info("Saving model to '{}'...".format(model_file))
+    LOGGER.info("Saving model to '%s'...", model_file)
     joblib.dump(model, model_file)
 
     LOGGER.info("Printing model information...")
@@ -133,10 +133,10 @@ def main_train(training_dataset, model_path,
 def main_predict(model_path, data_file, output_path, plot_posterior, **_):
 
     model_file = os.path.join(model_path, "model.pkl")
-    LOGGER.info("Loading random forest from '{}'...".format(model_file))
+    LOGGER.info("Loading random forest from '%s'...", model_file)
     model = joblib.load(model_file)
 
-    LOGGER.info("Loading data from '{}'...".format(data_file))
+    LOGGER.info("Loading data from '%s'...", data_file)
     data, _ = hela.load_data_file(data_file, model.rf.n_features_)
 
     posterior = model.posterior(data[0])
