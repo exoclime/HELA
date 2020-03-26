@@ -1,7 +1,7 @@
 
 from collections import namedtuple
 from multiprocessing import Pool
-from typing import Optional
+from typing import Optional, Tuple
 import logging
 
 import numpy as np
@@ -56,46 +56,23 @@ def importances_from_impurities(
         ) -> np.ndarray:
 
     LOGGER.info("Computing importances from impurities...")
-    importances_ = []
-    for tree, impurities_i in tqdm(zip(forest, impurities), total=len(forest)):
-        importance_i = _tree_importances_per_output(tree, impurities_i)
-        importances_.append(importance_i)
+    with Pool(forest.n_jobs) as pool:
+        importances_ = list(tqdm(
+            pool.imap(_tree_importances_per_output,
+                      zip(forest, impurities)),
+            total=len(forest)
+        ))
 
-    # importances = np.array(importances)
     importances = np.mean(importances_, axis=0)
 
     return importances / importances.sum()
 
 
-# Global variables to avoid pickling very large arrays with multiprocessing
-_X = None
-_Y = None
-
-
-def impurities_per_output(
-        forest: RandomForestRegressor,
-        x: np.ndarray,
-        y: np.ndarray
-        ) -> np.ndarray:
-
-    LOGGER.info("Computing impurities...")
-    global _X
-    global _Y
-    _X = x
-    _Y = y
-    with Pool(forest.n_jobs) as pool:
-        impurities = list(tqdm(
-            pool.imap(_tree_impurities_per_output, forest),
-            total=len(forest)
-        ))
-
-    return np.array(impurities)
-
-
 def _tree_importances_per_output(
-        tree: DecisionTreeRegressor,
-        impurities: np.ndarray
+        args: Tuple[DecisionTreeRegressor, np.ndarray]
         ) -> np.ndarray:
+
+    tree, impurities = args
 
     tree_ = tree.tree_
     importances = np.zeros((tree_.n_features, tree_.n_outputs))
@@ -130,6 +107,31 @@ def _tree_importances_per_output(
         )
 
     return importances / importances.sum()
+
+
+# Global variables to avoid pickling very large arrays with multiprocessing
+_X = None
+_Y = None
+
+
+def impurities_per_output(
+        forest: RandomForestRegressor,
+        x: np.ndarray,
+        y: np.ndarray
+        ) -> np.ndarray:
+
+    LOGGER.info("Computing impurities...")
+    global _X
+    global _Y
+    _X = x
+    _Y = y
+    with Pool(forest.n_jobs) as pool:
+        impurities = list(tqdm(
+            pool.imap(_tree_impurities_per_output, forest),
+            total=len(forest)
+        ))
+
+    return np.array(impurities)
 
 
 def _tree_impurities_per_output(tree: DecisionTreeRegressor) -> np.ndarray:
