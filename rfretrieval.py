@@ -9,11 +9,12 @@ import joblib
 
 from dataset import load_dataset, load_data_file
 from models import Model
+from feature_importance import importances_per_output
 from utils import config_logger
 from wpercentile import wpercentile
 import plot
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def train_model(dataset, num_trees, num_jobs, verbose=1):
@@ -31,7 +32,7 @@ def test_model(model, dataset, output_path):
     if dataset.testing_x is None:
         return
 
-    logger.info("Testing model...")
+    LOGGER.info("Testing model...")
     pred = model.predict(dataset.testing_x)
     # pred = model.predict_median(dataset.testing_x)
     r2scores = {name_i: metrics.r2_score(real_i, pred_i)
@@ -40,15 +41,15 @@ def test_model(model, dataset, output_path):
     for name, values in r2scores.items():
         print("\tR^2 score for {}: {:.3f}".format(name, values))
 
-    logger.info("Plotting testing results...")
+    LOGGER.info("Plotting testing results...")
     fig = plot.predicted_vs_real(dataset.testing_y, pred, dataset.names, dataset.ranges)
     fig.savefig(os.path.join(output_path, "predicted_vs_real.pdf"),
                 bbox_inches='tight')
 
 
-def compute_feature_importance(model, dataset, output_path):
+def _plot_feature_importances(model, dataset, output_path):
 
-    logger.info("Computing feature importance for individual parameters...")
+    LOGGER.info("Computing feature importances for individual parameters...")
     regr = multioutput.MultiOutputRegressor(model, n_jobs=1)
     regr.fit(dataset.training_x, dataset.training_y)
 
@@ -58,6 +59,28 @@ def compute_feature_importance(model, dataset, output_path):
 
     fig.savefig(os.path.join(output_path, "feature_importances.pdf"),
                 bbox_inches='tight')
+
+
+def _plot_feature_importances_breakdown(model, dataset, output_path):
+
+    LOGGER.info("Computing feature importances per output...")
+    importances = importances_per_output(
+        model.rf,
+        dataset.training_x,
+        model.scaler_transform(dataset.training_y)
+    )
+
+    fig = plot.stacked_feature_importances(
+        importances,
+        dataset.names,
+        dataset.colors
+    )
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(output_path, "feature_importances_breakdown.pdf"),
+        bbox_inches='tight'
+    )
 
 
 def data_ranges(posterior, percentiles=(50, 16, 84)):
@@ -70,37 +93,42 @@ def data_ranges(posterior, percentiles=(50, 16, 84)):
 
 def main_train(training_dataset, model_path,
                num_trees, num_jobs,
-               feature_importance, quiet,
+               feature_importances,
+               feature_importances_breakdown,
+               quiet,
                **_):
 
-    logger.info("Loading dataset '{}'...".format(training_dataset))
+    LOGGER.info("Loading dataset '{}'...".format(training_dataset))
     dataset = load_dataset(training_dataset)
 
-    logger.info("Training model...")
+    LOGGER.info("Training model...")
     model = train_model(dataset, num_trees, num_jobs, not quiet)
 
     os.makedirs(model_path, exist_ok=True)
     model_file = os.path.join(model_path, "model.pkl")
-    logger.info("Saving model to '{}'...".format(model_file))
+    LOGGER.info("Saving model to '{}'...".format(model_file))
     joblib.dump(model, model_file)
 
-    logger.info("Printing model information...")
+    LOGGER.info("Printing model information...")
     print("OOB score: {:.4f}".format(model.rf.oob_score_))
 
     test_model(model, dataset, model_path)
 
-    if feature_importance:
+    if feature_importances:
         model.enable_posterior = False
-        compute_feature_importance(model, dataset, model_path)
+        _plot_feature_importances(model, dataset, model_path)
+
+    if feature_importances_breakdown:
+        _plot_feature_importances_breakdown(model, dataset, model_path)
 
 
 def main_predict(model_path, data_file, output_path, plot_posterior, **_):
 
     model_file = os.path.join(model_path, "model.pkl")
-    logger.info("Loading random forest from '{}'...".format(model_file))
+    LOGGER.info("Loading random forest from '{}'...".format(model_file))
     model = joblib.load(model_file)
 
-    logger.info("Loading data from '{}'...".format(data_file))
+    LOGGER.info("Loading data from '{}'...".format(data_file))
     data, _ = load_data_file(data_file, model.rf.n_features_)
 
     posterior = model.posterior(data[0])
@@ -110,7 +138,7 @@ def main_predict(model_path, data_file, output_path, plot_posterior, **_):
         print("Prediction for {}: {:.3g} [+{:.3g} -{:.3g}]".format(name_i, *pred_range_i))
 
     if plot_posterior:
-        logger.info("Plotting the posterior matrix...")
+        LOGGER.info("Plotting the posterior matrix...")
 
         fig = plot.posterior_matrix(
             posterior,
@@ -119,10 +147,10 @@ def main_predict(model_path, data_file, output_path, plot_posterior, **_):
             colors=model.colors
         )
         os.makedirs(output_path, exist_ok=True)
-        logger.info("Saving the figure....")
+        LOGGER.info("Saving the figure....")
         fig.savefig(os.path.join(output_path, "posterior_matrix.pdf"),
                     bbox_inches='tight')
-        logger.info("Done.")
+        LOGGER.info("Done.")
 
 
 def show_usage(parser, **_):
@@ -137,6 +165,7 @@ def main():
     subparsers = parser.add_subparsers()
 
     parser_train = subparsers.add_parser('train', help="train a model")
+    parser_train.set_defaults(func=main_train)
     parser_train.add_argument("training_dataset", type=str,
                               help="JSON file with the training dataset description")
     parser_train.add_argument("model_path", type=str,
@@ -145,9 +174,10 @@ def main():
                               help="number of trees in the forest")
     parser_train.add_argument("--num-jobs", type=int, default=5,
                               help="number of parallel jobs for fitting the random forest")
-    parser_train.add_argument("--feature-importance", action='store_true',
-                              help="compute feature importances after training")
-    parser_train.set_defaults(func=main_train)
+    parser_train.add_argument("--feature-importances", action='store_true',
+                              help="plot feature importances after training")
+    parser_train.add_argument("--feature-importances-breakdown", action='store_true',
+                              help="plot feature importances per output after training")
 
     parser_test = subparsers.add_parser('predict', help="use a trained model to perform a prediction")
     parser_test.set_defaults(func=main_predict)
