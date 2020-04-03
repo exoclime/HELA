@@ -9,19 +9,15 @@ from matplotlib.colors import LinearSegmentedColormap
 from sklearn import metrics, neighbors
 from sklearn.preprocessing import MinMaxScaler
 
-from models import resample_posterior
-from wpercentile import wmedian
-
-try:
-    from tqdm import tqdm
-except ImportError:
-    def tqdm(x, *_, **__):
-        return x
+from .models import resample_posterior
+from .wpercentile import wmedian
+from .utils import tqdm
 
 __all__ = [
-    "predicted_vs_real",
-    "feature_importances",
-    "posterior_matrix"
+    'predicted_vs_real',
+    'feature_importances',
+    'stacked_feature_importances',
+    'posterior_matrix'
 ]
 
 POSTERIOR_MAX_SIZE = 10000
@@ -91,6 +87,26 @@ def feature_importances(forests, names, colors):
         ax.set_xlabel("Feature index", fontsize=18)
         ax.legend(fontsize=16)
         ax.grid()
+
+    fig.tight_layout()
+    return fig
+
+
+def stacked_feature_importances(importances, names, colors):
+
+    bottoms = np.zeros(importances.shape[0])
+
+    ind = np.arange(len(importances))
+
+    fig = plt.figure()
+    ax = fig.gca()
+    for data_i, name_i, color_i in zip(importances.T, names, colors):
+        ax.bar(ind, data_i, bottom=bottoms, color=color_i, label=name_i)
+        bottoms += data_i
+
+    ax.set_xlabel("Feature index", fontsize=18)
+    ax.legend(fontsize=16)
+    ax.grid()
 
     fig.tight_layout()
     return fig
