@@ -168,7 +168,7 @@ def _posterior(data_leaves, data_weights, data_y, query_leaves):
     # Remove samples with weight zero
     mask = weights_x != 0
     samples = data_y[mask]
-    weights = weights_x[mask]
+    weights = weights_x[mask].astype(np.uint8)
 
     return Posterior(samples, weights)
 
