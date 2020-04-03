@@ -8,11 +8,7 @@ from sklearn import ensemble
 from sklearn.utils import check_random_state
 from sklearn.preprocessing import MinMaxScaler
 
-try:
-    from tqdm import tqdm
-except ImportError:
-    def tqdm(x, *_, **__):
-        return x
+from .utils import tqdm
 
 __all__ = [
     "Model",
@@ -75,14 +71,14 @@ class Model:
 
         self.scaler.fit(y)
 
-    def _scaler_transform(self, y):
+    def scaler_transform(self, y):
         if y.ndim == 1:
             y = y[:, None]
             return self.scaler.transform(y)[:, 0]
 
         return self.scaler.transform(y)
 
-    def _scaler_inverse_transform(self, y):
+    def scaler_inverse_transform(self, y):
 
         if y.ndim == 1:
             y = y[:, None]
@@ -92,7 +88,7 @@ class Model:
 
     def fit(self, x, y):
         self._scaler_fit(y)
-        self.rf.fit(x, self._scaler_transform(y))
+        self.rf.fit(x, self.scaler_transform(y))
 
         # Build the structures to quickly compute the posteriors
         if self.enable_posterior:
@@ -105,7 +101,7 @@ class Model:
 
     def predict(self, x):
         pred = self.rf.predict(x)
-        return self._scaler_inverse_transform(pred)
+        return self.scaler_inverse_transform(pred)
 
     def predict_median(self, x):
         return self.predict_percentile(x, 50)
