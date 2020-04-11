@@ -28,7 +28,7 @@ def load_data_file(data_file, num_features):
     return x, y
 
 
-def load_dataset(dataset_file):
+def load_dataset(dataset_file, load_testing_data=True):
 
     with open(dataset_file, "r") as f:
         dataset_info = json.load(f)
@@ -45,7 +45,7 @@ def load_dataset(dataset_file):
 
     # Optionally, load testing data
     testing_x, testing_y = None, None
-    if dataset_info["testing_data"] is not None:
+    if load_testing_data and dataset_info["testing_data"] is not None:
         testing_file = os.path.join(base_path, dataset_info["testing_data"])
         LOGGER.debug("Loading testing data from '%s'...", testing_file)
         testing_x, testing_y = load_data_file(testing_file,

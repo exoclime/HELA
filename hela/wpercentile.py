@@ -35,6 +35,10 @@ def wpercentile(data, weights, percentiles, axis=None):
     """
     Compute percentiles of a weighted sample.
     """
+
+    # TODO: This code might fail with esoteric shapes of data, weights and for
+    # some values of axis. Check this properly.
+
     if axis is None:
         data = np.ravel(data)
         weights = np.ravel(weights)

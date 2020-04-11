@@ -60,7 +60,10 @@ def _plot_feature_importances(model, dataset, output_path):
     regr.fit(dataset.training_x, dataset.training_y)
 
     fig = hela.plot.feature_importances(
-        forests=[i.rf for i in regr.estimators_] + [model.rf],
+        forests=(
+            [i.random_forest for i in regr.estimators_]
+            + [model.random_forest]
+        ),
         names=dataset.names + ["joint prediction"],
         colors=dataset.colors + ["C0"]
     )
@@ -73,7 +76,7 @@ def _plot_feature_importances_breakdown(model, dataset, output_path):
 
     LOGGER.info("Computing feature importances per output...")
     importances = hela.importances_per_output(
-        model.rf,
+        model.random_forest,
         dataset.training_x,
         model.scaler_transform(dataset.training_y)
     )
@@ -91,20 +94,28 @@ def _plot_feature_importances_breakdown(model, dataset, output_path):
     )
 
 
+def _compute_median_fit(model, training_x, query, out_filename):
+    posterior_x = model.posterior(query, prior_samples=training_x)
+    median_fit = hela.posterior_percentile(posterior_x, 50)
+    np.save(out_filename, median_fit)
+
+
 def data_ranges(posterior, percentiles=(50, 16, 84)):
 
-    samples, weights = posterior
-    values = hela.wpercentile(samples, weights, percentiles, axis=0)
+    values = hela.posterior_percentile(posterior, percentiles)
     ranges = np.array([values[0], values[2]-values[0], values[0]-values[1]])
     return ranges.T
 
 
-def main_train(training_dataset, model_path,
-               num_trees, num_jobs,
-               feature_importances,
-               feature_importances_breakdown,
-               quiet,
-               **_):
+def main_train(
+        training_dataset,
+        model_path,
+        num_trees,
+        num_jobs,
+        feature_importances,
+        feature_importances_breakdown,
+        quiet,
+        **_):
 
     LOGGER.info("Loading dataset '%s'...", training_dataset)
     dataset = hela.load_dataset(training_dataset)
@@ -118,7 +129,7 @@ def main_train(training_dataset, model_path,
     joblib.dump(model, model_file)
 
     LOGGER.info("Printing model information...")
-    print("OOB score: {:.4f}".format(model.rf.oob_score_))
+    print("OOB score: {:.4f}".format(model.random_forest.oob_score_))
 
     test_model(model, dataset, model_path)
 
@@ -130,14 +141,24 @@ def main_train(training_dataset, model_path,
         _plot_feature_importances_breakdown(model, dataset, model_path)
 
 
-def main_predict(model_path, data_file, output_path, plot_posterior, **_):
+def main_predict(
+        training_dataset,
+        model_path,
+        data_file,
+        output_path,
+        plot_posterior,
+        save_median_fit,
+        **_):
+
+    LOGGER.info("Loading dataset '%s'...", training_dataset)
+    dataset = hela.load_dataset(training_dataset, load_testing_data=False)
 
     model_file = os.path.join(model_path, "model.pkl")
     LOGGER.info("Loading random forest from '%s'...", model_file)
     model = joblib.load(model_file)
 
     LOGGER.info("Loading data from '%s'...", data_file)
-    data, _ = hela.load_data_file(data_file, model.rf.n_features_)
+    data, _ = hela.load_data_file(data_file, model.random_forest.n_features_)
 
     posterior = model.posterior(data[0])
 
@@ -160,6 +181,14 @@ def main_predict(model_path, data_file, output_path, plot_posterior, **_):
         fig.savefig(os.path.join(output_path, "posterior_matrix.pdf"),
                     bbox_inches='tight')
         LOGGER.info("Done.")
+
+    if save_median_fit:
+        _compute_median_fit(
+            model,
+            dataset.training_x,
+            data[0],
+            os.path.join(output_path, "median_fit.npy")
+        )
 
 
 def show_usage(parser, **_):
@@ -208,6 +237,10 @@ def main():
     )
     parser_test.set_defaults(func=main_predict)
     parser_test.add_argument(
+        "training_dataset", type=str,
+        help="JSON file with the training dataset description"
+    )
+    parser_test.add_argument(
         "model_path", type=str,
         help="path to the trained model"
     )
@@ -222,6 +255,10 @@ def main():
     parser_test.add_argument(
         "--plot-posterior", action='store_true',
         help="plot and save the scatter matrix of the posterior distribution"
+    )
+    parser_test.add_argument(
+        "--save-median-fit", action='store_true',
+        help="save the median fit"
     )
 
     args = parser.parse_args()
