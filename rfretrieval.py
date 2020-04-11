@@ -92,11 +92,11 @@ def _plot_feature_importances_breakdown(model, dataset, output_path):
     )
 
 
-def _compute_median_fit(model, training_x, query, out_filename):
+def _compute_best_fit(model, training_x, query, out_filename):
 
     posterior_x = model.posterior(query, prior_samples=training_x)
-    median_fit = hela.posterior_percentile(posterior_x, 50)
-    np.save(out_filename, median_fit)
+    best_fit = hela.posterior_percentile(posterior_x, [50, 16, 84])
+    np.save(out_filename, best_fit)
 
 
 def data_ranges(posterior, percentiles=(50, 16, 84)):
@@ -146,7 +146,7 @@ def main_predict(
         data_file,
         output_path,
         plot_posterior,
-        save_median_fit,
+        best_fit_model,
         **_):
 
     LOGGER.info("Loading dataset '%s'...", training_dataset)
@@ -183,13 +183,13 @@ def main_predict(
                     bbox_inches='tight')
         LOGGER.info("Done.")
 
-    if save_median_fit:
-        LOGGER.info("Computing and saving median fit...")
-        _compute_median_fit(
+    if best_fit_model:
+        LOGGER.info("Computing and saving best fit...")
+        _compute_best_fit(
             model,
             dataset.training_x,
             data[0],
-            os.path.join(output_path, "median_fit.npy")
+            os.path.join(output_path, "best_fit.npy")
         )
         LOGGER.info("Done.")
 
@@ -260,8 +260,8 @@ def main():
         help="plot and save the scatter matrix of the posterior distribution"
     )
     parser_test.add_argument(
-        "--save-median-fit", action='store_true',
-        help="save the median fit"
+        "--best-fit-model", action='store_true',
+        help="save the best fit model"
     )
 
     args = parser.parse_args()
