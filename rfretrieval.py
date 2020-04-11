@@ -184,12 +184,14 @@ def main_predict(
         LOGGER.info("Done.")
 
     if save_median_fit:
+        LOGGER.info("Computing and saving median fit...")
         _compute_median_fit(
             model,
             dataset.training_x,
             data[0],
             os.path.join(output_path, "median_fit.npy")
         )
+        LOGGER.info("Done.")
 
 
 def show_usage(parser, **_):
