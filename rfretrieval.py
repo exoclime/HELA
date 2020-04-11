@@ -14,10 +14,8 @@ LOGGER = logging.getLogger(__name__)
 
 def train_model(dataset, num_trees, num_jobs, verbose=1):
     pipeline = hela.Model(
-        num_trees, num_jobs,
-        names=dataset.names,
-        ranges=dataset.ranges,
-        colors=dataset.colors,
+        num_trees=num_trees,
+        num_jobs=num_jobs,
         verbose=verbose
     )
     pipeline.fit(dataset.training_x, dataset.training_y)
@@ -95,6 +93,7 @@ def _plot_feature_importances_breakdown(model, dataset, output_path):
 
 
 def _compute_median_fit(model, training_x, query, out_filename):
+
     posterior_x = model.posterior(query, prior_samples=training_x)
     median_fit = hela.posterior_percentile(posterior_x, 50)
     np.save(out_filename, median_fit)
@@ -155,15 +154,17 @@ def main_predict(
 
     model_file = os.path.join(model_path, "model.pkl")
     LOGGER.info("Loading random forest from '%s'...", model_file)
-    model = joblib.load(model_file)
+    model: hela.Model = joblib.load(model_file)
 
     LOGGER.info("Loading data from '%s'...", data_file)
     data, _ = hela.load_data_file(data_file, model.random_forest.n_features_)
 
+    os.makedirs(output_path, exist_ok=True)
+
     posterior = model.posterior(data[0])
 
     posterior_ranges = data_ranges(posterior)
-    for name_i, pred_range_i in zip(model.names, posterior_ranges):
+    for name_i, pred_range_i in zip(dataset.names, posterior_ranges):
         format_str = "Prediction for {}: {:.3g} [+{:.3g} -{:.3g}]"
         print(format_str.format(name_i, *pred_range_i))
 
@@ -172,9 +173,9 @@ def main_predict(
 
         fig = hela.plot.posterior_matrix(
             posterior,
-            names=model.names,
-            ranges=model.ranges,
-            colors=model.colors
+            names=dataset.names,
+            ranges=dataset.ranges,
+            colors=dataset.colors
         )
         os.makedirs(output_path, exist_ok=True)
         LOGGER.info("Saving the figure....")

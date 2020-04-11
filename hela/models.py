@@ -1,7 +1,6 @@
 
 import logging
-from collections import namedtuple
-from typing import Optional, Union, Iterable, List, Tuple
+from typing import Optional, Union, Dict, Iterable, List
 
 import numpy as np
 
@@ -10,40 +9,13 @@ from sklearn.utils import check_random_state
 from sklearn.preprocessing import MinMaxScaler
 
 from .utils import tqdm
-from .wpercentile import wpercentile
+from .posterior import Posterior, posterior_percentile
 
 __all__ = [
     "Model",
-    "Posterior",
-    "resample_posterior",
-    "posterior_percentile"
 ]
 
 LOGGER = logging.getLogger(__name__)
-
-# Posteriors are represented as a collection of weighted samples
-Posterior = namedtuple("Posterior", ["samples", "weights"])
-
-
-def resample_posterior(posterior: Posterior, num_draws: int) -> Posterior:
-
-    p = posterior.weights / posterior.weights.sum()
-    indices = np.random.choice(len(posterior.samples), size=num_draws, p=p)
-
-    new_weights = np.bincount(indices, minlength=len(posterior.samples))
-    mask = new_weights != 0
-    new_samples = posterior.samples[mask]
-    new_weights = posterior.weights[mask]
-
-    return Posterior(new_samples, new_weights)
-
-
-def posterior_percentile(
-        posterior: Posterior,
-        percentiles: Union[float, Iterable[float]]) -> np.ndarray:
-
-    samples, weights = posterior
-    return wpercentile(samples, weights, percentiles, axis=0)
 
 
 class Model:
@@ -52,9 +24,6 @@ class Model:
             self,
             num_trees: int,
             num_jobs: int,
-            names: Iterable[str],
-            ranges: Iterable[Tuple[float, float]],
-            colors: Iterable[str],
             enable_posterior: bool = True,
             verbose: int = 1):
 
@@ -73,10 +42,6 @@ class Model:
         self.num_trees = num_trees
         self.num_jobs = num_jobs
         self.verbose = verbose
-
-        self.ranges = ranges
-        self.names = names
-        self.colors = colors
 
         # To compute the posteriors
         self.enable_posterior = enable_posterior
@@ -196,9 +161,6 @@ class Model:
         return {
             "num_trees": self.num_trees,
             "num_jobs": self.num_jobs,
-            "names": self.names,
-            "ranges": self.ranges,
-            "colors": self.colors,
             "enable_posterior": self.enable_posterior,
             "verbose": self.verbose
         }
@@ -212,7 +174,7 @@ def _posterior(
         ) -> Posterior:
 
     weights_x = (query_leaves[:, None] == data_leaves) * data_weights
-    weights_x = _as_smallest_udtype(weights_x.sum(0))
+    weights_x = weights_x.sum(0)
 
     # Remove samples with weight zero
     mask = weights_x != 0
@@ -233,13 +195,12 @@ def _posterior_percentile_nocache(
     values = []
 
     LOGGER.info("Computing percentiles...")
+    # This can be parallelized with multiprocessing.
     for leaves_x_i in tqdm(query_leaves):
         posterior = _posterior(
             data_leaves, data_weights,
             prior_samples, leaves_x_i
         )
-        # samples = np.repeat(posterior.samples, posterior.weights, axis=0)
-        # value = np.percentile(samples, percentile, axis=0)
         value = posterior_percentile(posterior, percentile)
         values.append(value)
 
@@ -264,30 +225,40 @@ def _posterior_percentile_cache(
     values = []
     # Check the contents of the leaves in leaves_x
     LOGGER.info("Computing percentiles...")
+    # This can be parallelized with multiprocessing.
     for leaves_x_i in tqdm(query_leaves):
-        data_elements: List[int] = []
+        indices: List[int] = []
+        weights: List[int] = []
         for tree, leaves_x_i_j in enumerate(leaves_x_i):
-            aux = cache[tree][leaves_x_i_j]
-            data_elements.extend(aux)
-        value = np.percentile(prior_samples[data_elements], percentile, axis=0)
+            cur_indices = cache[tree][0][leaves_x_i_j]
+            cur_weights = cache[tree][1][leaves_x_i_j]
+            indices.extend(cur_indices)
+            weights.extend(cur_weights)
+
+        posterior = Posterior(prior_samples[indices], weights)
+        value = posterior_percentile(posterior, percentile)
         values.append(value)
 
     return np.array(values)
 
 
-def _build_leaves_cache(leaves, weights):
+def _build_leaves_cache(data_leaves, data_weights):
 
-    result = {}
-    for index, (leaf, weight) in enumerate(zip(leaves, weights)):
+    indices: Dict[int, List[int]] = {}
+    weights: Dict[int, List[int]] = {}
+
+    for index, (leaf, weight) in enumerate(zip(data_leaves, data_weights)):
         if weight == 0:
             continue
 
-        if leaf not in result:
-            result[leaf] = [index] * weight
+        if leaf not in indices:
+            indices[leaf] = [index]
+            weights[leaf] = [weight]
         else:
-            result[leaf].extend([index] * weight)
+            indices[leaf].append(index)
+            weights[leaf].append(weight)
 
-    return result
+    return indices, weights
 
 
 def _generate_sample_indices(random_state, n_samples):

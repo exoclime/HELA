@@ -9,7 +9,7 @@ from matplotlib.colors import LinearSegmentedColormap
 from sklearn import metrics, neighbors
 from sklearn.preprocessing import MinMaxScaler
 
-from .models import resample_posterior
+from .posterior import resample_posterior
 from .wpercentile import wmedian
 from .utils import tqdm
 
