@@ -23,6 +23,7 @@ class Model:
     def __init__(
             self,
             num_trees: int,
+            min_impurity_decrease: float,
             num_jobs: int,
             enable_posterior: bool = True,
             verbose: int = 1):
@@ -34,14 +35,12 @@ class Model:
             verbose=verbose,
             n_jobs=num_jobs,
             max_features="sqrt",
-            min_impurity_decrease=0.01
+            min_impurity_decrease=min_impurity_decrease
         )
 
         self.scaler = scaler
 
         self.num_trees = num_trees
-        self.num_jobs = num_jobs
-        self.verbose = verbose
 
         # To compute the posteriors
         self.enable_posterior = enable_posterior
@@ -160,9 +159,10 @@ class Model:
     def get_params(self, deep=True):
         return {
             "num_trees": self.num_trees,
-            "num_jobs": self.num_jobs,
+            "min_impurity_decrease": self.random_forest.min_impurity_decrease,
+            "num_jobs": self.random_forest.n_jobs,
             "enable_posterior": self.enable_posterior,
-            "verbose": self.verbose
+            "verbose": self.random_forest.verbose
         }
 
 

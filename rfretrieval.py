@@ -12,9 +12,16 @@ import hela
 LOGGER = logging.getLogger(__name__)
 
 
-def train_model(dataset, num_trees, num_jobs, verbose=1):
+def train_model(
+        dataset,
+        num_trees,
+        min_impurity_decrease,
+        num_jobs,
+        verbose=1):
+
     pipeline = hela.Model(
         num_trees=num_trees,
+        min_impurity_decrease=min_impurity_decrease,
         num_jobs=num_jobs,
         verbose=verbose
     )
@@ -110,6 +117,7 @@ def main_train(
         training_dataset,
         model_path,
         num_trees,
+        min_impurity_decrease,
         num_jobs,
         feature_importances,
         feature_importances_breakdown,
@@ -120,7 +128,12 @@ def main_train(
     dataset = hela.load_dataset(training_dataset)
 
     LOGGER.info("Training model...")
-    model = train_model(dataset, num_trees, num_jobs, not quiet)
+    model = train_model(
+        dataset=dataset,
+        num_trees=num_trees,
+        min_impurity_decrease=min_impurity_decrease,
+        num_jobs=num_jobs,
+        verbose=not quiet)
 
     os.makedirs(model_path, exist_ok=True)
     model_file = os.path.join(model_path, "model.pkl")
@@ -220,6 +233,10 @@ def main():
     parser_train.add_argument(
         "--num-trees", type=int, default=1000,
         help="number of trees in the forest"
+    )
+    parser_train.add_argument(
+        "--min-impurity-decrease", type=float, default=0.01,
+        help="minimum impurity decrease to split a node in each tree"
     )
     parser_train.add_argument(
         "--num-jobs", type=int, default=5,
