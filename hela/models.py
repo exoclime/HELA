@@ -5,6 +5,7 @@ from typing import Optional, Union, Dict, Iterable, List
 import numpy as np
 
 from sklearn import ensemble
+from sklearn.base import BaseEstimator
 from sklearn.utils import check_random_state
 from sklearn.preprocessing import MinMaxScaler
 
@@ -18,29 +19,36 @@ __all__ = [
 LOGGER = logging.getLogger(__name__)
 
 
-class Model:
+class Model(BaseEstimator):
 
     def __init__(
             self,
-            num_trees: int,
-            min_impurity_decrease: float,
-            num_jobs: int,
-            enable_posterior: bool = True,
-            verbose: int = 1):
+            n_estimators: int = 1000,
+            criterion: str = 'mse',
+            max_features: Union[str, int, float] = 'sqrt',
+            min_impurity_decrease: float = 0.0,
+            bootstrap: bool = True,
+            n_jobs: Optional[int] = None,
+            random_state: Union[int, np.random.RandomState, None] = None,
+            verbose: int = 0,
+            max_samples: Union[float, int, None] = None,
+            enable_posterior: bool = True
+            ):
 
         scaler = MinMaxScaler(feature_range=(0, 100))
         self.random_forest = ensemble.RandomForestRegressor(
-            n_estimators=num_trees,
-            oob_score=True,
+            n_estimators=n_estimators,
+            criterion=criterion,
+            max_features=max_features,
+            min_impurity_decrease=min_impurity_decrease,
+            bootstrap=bootstrap,
+            n_jobs=n_jobs,
+            random_state=random_state,
             verbose=verbose,
-            n_jobs=num_jobs,
-            max_features="sqrt",
-            min_impurity_decrease=min_impurity_decrease
+            max_samples=max_samples
         )
 
         self.scaler = scaler
-
-        self.num_trees = num_trees
 
         # To compute the posteriors
         self.enable_posterior = enable_posterior
@@ -117,7 +125,7 @@ class Model:
         if prior_samples is None:
             prior_samples = self.data_y
 
-        if len(x) > self.num_trees:
+        if len(x) > self.random_forest.n_estimators:
             # If there are many queries,
             # it is faster to find points using a cache
             return _posterior_percentile_cache(
@@ -155,15 +163,6 @@ class Model:
             self.data_leaves, self.data_weights,
             prior_samples, leaves_x
         )
-
-    def get_params(self, deep=True):
-        return {
-            "num_trees": self.num_trees,
-            "min_impurity_decrease": self.random_forest.min_impurity_decrease,
-            "num_jobs": self.random_forest.n_jobs,
-            "enable_posterior": self.enable_posterior,
-            "verbose": self.random_forest.verbose
-        }
 
 
 def _posterior(
