@@ -101,7 +101,7 @@ def main_predict(model_path, data_file, output_path, plot_posterior, **_):
     model = joblib.load(model_file)
     
     logger.info("Loading data from '{}'...".format(data_file))
-    data, _ = load_data_file(data_file, model.rf.n_features_)
+    data, _ = load_data_file(data_file, model.rf.n_features_in_)
     
     posterior = model.posterior(data[0])
     
