@@ -124,26 +124,26 @@ def posterior_matrix(posterior, names, ranges, colors, soft_colors=None):
         ax.xaxis.set_visible(False)
         ax.yaxis.set_visible(False)
         ax.title.set_visible(False)
-        if ax.is_first_col():
+        if ax.get_subplotspec().is_first_col():
             ax.yaxis.set_ticks_position('left')
             ax.yaxis.set_visible(True)
             if names is not None:
                 ax.set_ylabel(names[dims[1]], fontsize=18)
-        if ax.is_last_col():
+        if ax.get_subplotspec().is_last_col():
             ax.yaxis.set_ticks_position('right')
             ax.yaxis.set_visible(True)
-        if ax.is_first_row():
+        if ax.get_subplotspec().is_first_row():
             ax.xaxis.set_ticks_position('top')
             ax.xaxis.set_visible(True)
-        if ax.is_last_row():
+        if ax.get_subplotspec().is_last_row():
             ax.xaxis.set_ticks_position('bottom')
             ax.xaxis.set_visible(True)
             if names is not None:
                 ax.set_xlabel(names[dims[0]], fontsize=18)
-        if ax.is_first_col() and ax.is_first_row():
+        if ax.get_subplotspec().is_first_col() and ax.get_subplotspec().is_first_row():
             ax.yaxis.set_visible(False)
             ax.set_ylabel("")
-        if ax.is_last_col() and ax.is_last_row():
+        if ax.get_subplotspec().is_last_col() and ax.get_subplotspec().is_last_row():
             ax.yaxis.set_visible(False)
 
         if dims[0] < dims[1]:
